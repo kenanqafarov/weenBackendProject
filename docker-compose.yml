@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ween-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ween
+      MYSQL_USER: ween_user
+      MYSQL_PASSWORD: ween_password
+      MYSQL_INITDB_SKIP_TZINFO: 'yes'
+    ports:
+      - "3306:3306"
+    volumes:
+      - ween_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ween-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ween_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: ween-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ween_minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: ween-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ween-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:mysql://mysql:3306/ween
+      DB_USERNAME: ween_user
+      DB_PASSWORD: ween_password
+      REDIS_HOST: redis
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ween
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      JWT_SECRET: your-super-secret-jwt-key-min-32-characters-required-here
+      AES_SECRET_KEY: your-16-char-key1
+      ORGANIZER_API_KEY: dev-api-key-test
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./src/main/resources:/app/resources
+
+volumes:
+  ween_mysql_data:
+  ween_redis_data:
+  ween_minio_data:
+
+networks:
+  default:
+    name: ween-network
