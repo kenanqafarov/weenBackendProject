@@ -9,7 +9,6 @@ import com.ween.mapper.CertificateMapper;
 import com.ween.mapper.UserMapper;
 import com.ween.service.CertificateService;
 import com.ween.service.RegistrationService;
-import com.ween.service.StorageService;
 import com.ween.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,7 +37,6 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final StorageService storageService;
     private final RegistrationService registrationService;
     private final CertificateService certificateService;
     private final UserMapper userMapper;
@@ -96,28 +94,6 @@ public class UserController {
             return ResponseEntity.ok(ApiResponse.ok(response, "Profile retrieved successfully"));
         } catch (Exception e) {
             log.error("Failed to retrieve public profile for username: {}", username, e);
-            throw e;
-        }
-    }
-
-    @PostMapping("/me/profile-photo")
-    @Operation(summary = "Upload profile photo", description = "Upload user profile photo")
-    @SecurityRequirement(name = "Bearer Authentication")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Photo uploaded successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid file")
-    })
-    public ResponseEntity<ApiResponse<UserResponse>> uploadProfilePhoto(
-            @Parameter(description = "Profile photo file", required = true)
-            @RequestParam("file") MultipartFile file) {
-        try {
-            String userId = getCurrentUserId();
-            String photoUrl = storageService.uploadProfilePhoto(file, userId);
-            UserResponse response = userService.updateProfilePhoto(userId, photoUrl);
-            return ResponseEntity.ok(ApiResponse.ok(response, "Profile photo uploaded successfully"));
-        } catch (Exception e) {
-            log.error("Failed to upload profile photo for user: {}", getCurrentUserId(), e);
             throw e;
         }
     }

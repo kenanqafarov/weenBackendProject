@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -21,7 +20,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final StorageService storageService;
     private final CoinService coinService;
 
     public User getUserById(String userId) {
@@ -76,28 +74,6 @@ public class UserService {
         }
 
         return updated;
-    }
-
-    @Transactional
-    public String uploadProfilePhoto(String userId, MultipartFile photoFile) {
-        User user = getUserById(userId);
-
-        // Delete old photo if exists
-        if (user.getProfilePhotoUrl() != null && !user.getProfilePhotoUrl().isEmpty()) {
-            try {
-                storageService.deleteFile(user.getProfilePhotoUrl());
-            } catch (Exception e) {
-                log.warn("Failed to delete old profile photo", e);
-            }
-        }
-
-        // Upload new photo
-        String photoUrl = storageService.uploadProfilePhoto(photoFile, userId);
-        user.setProfilePhotoUrl(photoUrl);
-        userRepository.save(user);
-
-        log.info("Profile photo uploaded for user: {}", userId);
-        return photoUrl;
     }
 
     public boolean isProfileComplete(User user) {

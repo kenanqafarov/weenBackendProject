@@ -28,11 +28,6 @@ ween:
     refresh-token-expiry: 604800
   aes:
     secret-key: dev-16-char-key1
-  s3:
-    endpoint: http://localhost:9000
-    bucket: ween
-    access-key: minioadmin
-    secret-key: minioadmin
   api-key: dev-api-key-test
   cors:
     allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000

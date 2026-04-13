@@ -1,6 +1,5 @@
 package com.ween.entity;
 
-import com.ween.enums.SubscriptionPlan;
 import lombok.*;
 import jakarta.persistence.*;
 
@@ -29,11 +28,6 @@ public class Organization extends BaseEntity {
 
     @Column(length = 300)
     private String website;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "subscription_plan")
-    @Builder.Default
-    private SubscriptionPlan subscriptionPlan = SubscriptionPlan.FREE;
 
     @Column(name = "owner_id", columnDefinition = "CHAR(36)", nullable = false)
     private String ownerId;

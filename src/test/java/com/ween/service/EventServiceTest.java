@@ -5,9 +5,7 @@ import com.ween.entity.Organization;
 import com.ween.dto.request.CreateEventRequest;
 import com.ween.enums.EventCategory;
 import com.ween.enums.EventStatus;
-import com.ween.enums.SubscriptionPlan;
 import com.ween.exception.ResourceNotFoundException;
-import com.ween.exception.SubscriptionLimitException;
 import com.ween.mapper.EventMapper;
 import com.ween.repository.EventRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,9 +42,6 @@ class EventServiceTest {
     private OrganizationService organizationService;
 
     @Mock
-    private StorageService storageService;
-
-    @Mock
     private EventMapper eventMapper;
 
     @InjectMocks
@@ -65,7 +60,6 @@ class EventServiceTest {
         testOrganization = Organization.builder()
                 .id(organizationId)
                 .name("Test Organization")
-                .subscriptionPlan(SubscriptionPlan.FREE)
                 .build();
 
         createEventRequest = CreateEventRequest.builder()
@@ -114,58 +108,6 @@ class EventServiceTest {
         assertEquals(createEventRequest.getTitle(), result.getTitle());
         assertEquals(organizationId, result.getOrganizationId());
         assertEquals(EventStatus.DRAFT, result.getStatus());
-        verify(eventRepository, times(1)).save(any(Event.class));
-    }
-
-    @Test
-    @DisplayName("Should throw exception when subscription limit exceeded")
-    void testCreateEventExceedsSubscriptionLimit() {
-        // Arrange
-        when(organizationService.getOrganizationById(organizationId)).thenReturn(testOrganization);
-        when(organizationService.canCreateEvent(organizationId)).thenReturn(false);
-
-        // Act & Assert
-        assertThrows(SubscriptionLimitException.class, () ->
-                eventService.createEvent(createEventRequest, organizationId)
-        );
-        verify(eventRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Should enforce FREE plan event limit (max 5 events)")
-    void testFreePlanEventLimit() {
-        // Arrange
-        testOrganization.setSubscriptionPlan(SubscriptionPlan.FREE);
-        when(organizationService.getOrganizationById(organizationId)).thenReturn(testOrganization);
-        when(organizationService.canCreateEvent(organizationId)).thenReturn(false);
-
-        // Act & Assert
-        assertThrows(SubscriptionLimitException.class, () ->
-                eventService.createEvent(createEventRequest, organizationId)
-        );
-    }
-
-    @Test
-    @DisplayName("Should allow PREMIUM plan to create more events")
-    void testPremiumPlanHigherLimit() {
-        // Arrange
-        testOrganization.setSubscriptionPlan(SubscriptionPlan.PREMIUM);
-        when(organizationService.getOrganizationById(organizationId)).thenReturn(testOrganization);
-        when(organizationService.canCreateEvent(organizationId)).thenReturn(true);
-        
-        Event event = Event.builder()
-                .id(eventId)
-                .title(createEventRequest.getTitle())
-                .organizationId(organizationId)
-                .status(EventStatus.DRAFT)
-                .build();
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
-
-        // Act
-        Event result = eventService.createEvent(createEventRequest, organizationId);
-
-        // Assert
-        assertNotNull(result);
         verify(eventRepository, times(1)).save(any(Event.class));
     }
 

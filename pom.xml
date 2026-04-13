@@ -29,7 +29,6 @@
         <zxing.version>3.5.3</zxing.version>
         <itext.version>7.2.1</itext.version>
         <!-- <firebase-admin.version>9.2.0</firebase-admin.version> --> <!-- DISABLED -->
-        <aws-java-sdk-s3.version>1.12.565</aws-java-sdk-s3.version>
         <testcontainers.version>1.19.3</testcontainers.version>
         <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
     </properties>
@@ -170,13 +169,6 @@
             <version>${firebase-admin.version}</version>
         </dependency>
         -->
-
-        <!-- AWS S3 -->
-        <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>s3</artifactId>
-            <version>2.22.9</version>
-        </dependency>
 
         <!-- Rate Limiting -->
         <dependency>

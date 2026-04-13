@@ -40,9 +40,6 @@ class CertificateServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private StorageService storageService;
-
-    @Mock
     private CoinService coinService;
 
     @Mock
@@ -97,7 +94,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -120,7 +116,7 @@ class CertificateServiceTest {
         assertEquals(pdfUrl, result.getPdfUrl());
         assertEquals(CertificateTemplate.GENERAL, result.getTemplateType());
         verify(certificateRepository, times(1)).save(any(Certificate.class));
-        verify(storageService, times(1)).uploadCertificatePdf(any(byte[].class), anyString());
+        
     }
 
     @Test
@@ -185,7 +181,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -202,9 +197,7 @@ class CertificateServiceTest {
         certificateService.generateCertificate(testUserId, testEventId, CertificateTemplate.GENERAL);
 
         // Assert
-        verify(storageService, times(1)).uploadCertificatePdf(any(byte[].class), argThat(fileName ->
-                fileName.startsWith("CERT-") || fileName.contains("certificate")
-        ));
+        
     }
 
     @Test
@@ -217,7 +210,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -247,7 +239,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -278,7 +269,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -310,7 +300,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(expectedPdfUrl);
         
         Certificate savedCert = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -328,7 +317,7 @@ class CertificateServiceTest {
 
         // Assert
         assertEquals(expectedPdfUrl, result.getPdfUrl());
-        verify(storageService, times(1)).uploadCertificatePdf(any(byte[].class), anyString());
+        
     }
 
     @Test
@@ -341,7 +330,6 @@ class CertificateServiceTest {
         when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         when(eventRepository.findById(testEventId)).thenReturn(Optional.of(testEvent));
         when(certificateRepository.existsByUserIdAndEventId(testUserId, testEventId)).thenReturn(false);
-        when(storageService.uploadCertificatePdf(any(byte[].class), anyString())).thenReturn(pdfUrl);
         
         Certificate cert1 = Certificate.builder()
                 .id(UUID.randomUUID().toString())
@@ -362,3 +350,4 @@ class CertificateServiceTest {
         assertFalse(result.getCertificateNumber().isEmpty());
     }
 }
+

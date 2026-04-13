@@ -1,6 +1,5 @@
 package com.ween.dto.response;
 
-import com.ween.enums.SubscriptionPlan;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +18,6 @@ public class OrganizationResponse {
     private String logoUrl;
     private String contactEmail;
     private String website;
-    private SubscriptionPlan subscriptionPlan;
     private String ownerId;
     private Boolean isVerified;
     private String verificationNote;

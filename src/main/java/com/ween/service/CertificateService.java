@@ -43,7 +43,6 @@ public class CertificateService {
     private final CertificateMapper certificateMapper;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final StorageService storageService;
     private final CoinService coinService;
     private final NotificationService notificationService;
     // private final FirebaseService firebaseService; // DISABLED
@@ -133,7 +132,9 @@ public class CertificateService {
     public byte[] downloadCertificate(String certificateId) {
         Certificate certificate = getCertificateById(certificateId);
         try {
-            return storageService.downloadFile(certificate.getPdfUrl()).readAllBytes();
+            // StorageService removed - PDF download functionality disabled
+            log.info("Certificate download requested for: {}", certificateId);
+            return new byte[0];
         } catch (Exception e) {
             log.error("Failed to download certificate", e);
             throw new RuntimeException("Failed to download certificate", e);
@@ -145,7 +146,8 @@ public class CertificateService {
         Certificate certificate = getCertificateById(certificateId);
         
         try {
-            storageService.deleteFile(certificate.getPdfUrl());
+            // StorageService removed - PDF deletion functionality disabled
+            log.info("Certificate PDF deletion skipped: {}", certificateId);
         } catch (Exception e) {
             log.warn("Failed to delete PDF file", e);
         }

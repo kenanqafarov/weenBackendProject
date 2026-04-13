@@ -69,11 +69,6 @@ ween:
     refresh-token-expiry: 604800
   aes:
     secret-key: ${AES_SECRET_KEY:16-character-key}
-  s3:
-    endpoint: ${S3_ENDPOINT:http://localhost:9000}
-    bucket: ${S3_BUCKET:ween}
-    access-key: ${S3_ACCESS_KEY:minioadmin}
-    secret-key: ${S3_SECRET_KEY:minioadmin}
   firebase:
     credentials-path: ${FIREBASE_CREDS_PATH:/app/config/firebase-admin-key.json}
   mail:

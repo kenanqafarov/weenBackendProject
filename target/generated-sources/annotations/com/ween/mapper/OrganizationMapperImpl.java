@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-13T00:16:43+0400",
+    date = "2026-04-13T15:46:56+0400",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
@@ -27,7 +27,6 @@ public class OrganizationMapperImpl implements OrganizationMapper {
         organizationResponse.logoUrl( organization.getLogoUrl() );
         organizationResponse.contactEmail( organization.getContactEmail() );
         organizationResponse.website( organization.getWebsite() );
-        organizationResponse.subscriptionPlan( organization.getSubscriptionPlan() );
         organizationResponse.ownerId( organization.getOwnerId() );
         organizationResponse.isVerified( organization.getIsVerified() );
         organizationResponse.verificationNote( organization.getVerificationNote() );

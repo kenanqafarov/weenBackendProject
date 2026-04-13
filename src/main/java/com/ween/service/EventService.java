@@ -10,7 +10,6 @@ import com.ween.entity.Organization;
 import com.ween.enums.EventCategory;
 import com.ween.enums.EventStatus;
 import com.ween.exception.ResourceNotFoundException;
-import com.ween.exception.SubscriptionLimitException;
 import com.ween.mapper.EventMapper;
 import com.ween.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -33,19 +31,11 @@ public class EventService {
     private final EventRepository eventRepository;
     private final EventMapper eventMapper;
     private final OrganizationService organizationService;
-    private final StorageService storageService;
     private final RegistrationService registrationService;
 
     @Transactional
     public Event createEvent(CreateEventRequest request, String organizationId) {
         Organization organization = organizationService.getOrganizationById(organizationId);
-
-        // Check subscription limit
-        if (!organizationService.canCreateEvent(organizationId)) {
-            throw new SubscriptionLimitException(
-                    "Event limit exceeded for subscription plan: " + organization.getSubscriptionPlan()
-            );
-        }
 
         Event event = Event.builder()
                 .title(request.getTitle())
@@ -123,28 +113,6 @@ public class EventService {
         Event updated = eventRepository.save(event);
         log.info("Event updated: {}", eventId);
         return updated;
-    }
-
-    @Transactional
-    public String uploadCoverImage(String eventId, MultipartFile imageFile) {
-        Event event = getEventById(eventId);
-
-        // Delete old image if exists
-        if (event.getCoverImageUrl() != null && !event.getCoverImageUrl().isEmpty()) {
-            try {
-                storageService.deleteFile(event.getCoverImageUrl());
-            } catch (Exception e) {
-                log.warn("Failed to delete old cover image", e);
-            }
-        }
-
-        // Upload new image
-        String imageUrl = storageService.uploadEventCoverImage(imageFile, eventId);
-        event.setCoverImageUrl(imageUrl);
-        eventRepository.save(event);
-
-        log.info("Cover image uploaded for event: {}", eventId);
-        return imageUrl;
     }
 
     @Transactional
@@ -258,8 +226,7 @@ public class EventService {
     }
 
     public Integer getEventLimitForOrganization(String organizationId) {
-        Organization organization = organizationService.getOrganizationById(organizationId);
-        return organizationService.getEventLimitForPlan(organization.getSubscriptionPlan());
+        return Integer.MAX_VALUE;
     }
 
     public Page<EventResponse> getOrganizationEvents(String id, Pageable pageable) {

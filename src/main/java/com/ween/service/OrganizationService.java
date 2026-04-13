@@ -4,7 +4,6 @@ import com.ween.dto.request.CreateOrganizationRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
 import com.ween.entity.Organization;
 import com.ween.entity.User;
-import com.ween.enums.SubscriptionPlan;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.OrganizationMapper;
 import com.ween.repository.EventRepository;
@@ -16,7 +15,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @Service
@@ -28,7 +26,6 @@ public class OrganizationService {
     private final OrganizationMapper organizationMapper;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final StorageService storageService;
 
     @Transactional
     public Organization createOrganization(CreateOrganizationRequest request, String ownerId) {
@@ -40,7 +37,6 @@ public class OrganizationService {
                 .description(request.getDescription())
                 .contactEmail(request.getContactEmail())
                 .ownerId(ownerId)
-                .subscriptionPlan(SubscriptionPlan.FREE)
                 .build();
 
         Organization saved = organizationRepository.save(organization);
@@ -75,28 +71,6 @@ public class OrganizationService {
     }
 
     @Transactional
-    public String uploadLogo(String organizationId, MultipartFile logoFile) {
-        Organization organization = getOrganizationById(organizationId);
-
-        // Delete old logo if exists
-        if (organization.getLogoUrl() != null && !organization.getLogoUrl().isEmpty()) {
-            try {
-                storageService.deleteFile(organization.getLogoUrl());
-            } catch (Exception e) {
-                log.warn("Failed to delete old logo", e);
-            }
-        }
-
-        // Upload new logo
-        String logoUrl = storageService.uploadOrganizationLogo(logoFile, organizationId);
-        organization.setLogoUrl(logoUrl);
-        organizationRepository.save(organization);
-
-        log.info("Logo uploaded for organization: {}", organizationId);
-        return logoUrl;
-    }
-
-    @Transactional
     public void deleteOrganization(String organizationId) {
         Organization organization = getOrganizationById(organizationId);
         organizationRepository.delete(organization);
@@ -116,28 +90,8 @@ public class OrganizationService {
         ));
     }
 
-    @Transactional
-    public void upgradeSubscription(String organizationId, SubscriptionPlan plan) {
-        Organization organization = getOrganizationById(organizationId);
-        organization.setSubscriptionPlan(plan);
-        organizationRepository.save(organization);
-        log.info("Organization subscription upgraded to {}: {}", plan, organizationId);
-    }
-
-    public Integer getEventLimitForPlan(SubscriptionPlan plan) {
-        return switch (plan) {
-            case FREE -> 5;
-            case STARTER -> 20;
-            case PROFESSIONAL -> 100;
-            case ENTERPRISE -> Integer.MAX_VALUE;
-        };
-    }
-
     public long getRemainingEventSlots(String organizationId) {
-        Organization organization = getOrganizationById(organizationId);
-        Integer limit = getEventLimitForPlan(organization.getSubscriptionPlan());
-        long currentCount = getOrganizationEventCount(organizationId);
-        return Math.max(0, limit - currentCount);
+        return Long.MAX_VALUE;
     }
 
     public boolean canCreateEvent(String organizationId) {

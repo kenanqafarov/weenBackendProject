@@ -149,20 +149,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
     }
 
-    @ExceptionHandler(SubscriptionLimitException.class)
-    public ResponseEntity<ErrorResponse> handleSubscriptionLimit(SubscriptionLimitException ex, WebRequest request) {
-        log.warn("Subscription limit exceeded: {}", ex.getMessage());
-        ErrorResponse errorResponse = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.PAYMENT_REQUIRED.value())
-            .error("Payment Required")
-            .message(ex.getMessage())
-            .path(request.getDescription(false).replace("uri=", ""))
-            .traceId(UUID.randomUUID().toString())
-            .build();
-        return new ResponseEntity<>(errorResponse, HttpStatus.PAYMENT_REQUIRED);
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
         log.error("Internal server error", ex);
