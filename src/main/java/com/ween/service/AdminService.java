@@ -49,6 +49,8 @@ public class AdminService {
         return users.map(userMapper::toUserResponse);
     }
 
+//    UserBanlamaq əlavə etmək
+
     public void banUser(String userId, String reason) {
         log.debug("Banning user: {} with reason: {}", userId, reason);
         
@@ -61,6 +63,7 @@ public class AdminService {
         
         log.info("User banned successfully: {}", userId);
     }
+//    User bandan çıxarmaq əlavə etmək
 
     public void unbanUser(String userId) {
         log.debug("Unbanning user: {}", userId);

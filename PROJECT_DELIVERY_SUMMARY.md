@@ -329,8 +329,8 @@ docker-compose up -d
 ```
 
 ### 4. Access Services
-- **API:** http://localhost:8080
-- **Swagger UI:** http://localhost:8080/swagger-ui.html
+- **API:** http://localhost:5000
+- **Swagger UI:** http://localhost:5000/swagger-ui.html
 - **MinIO:** http://localhost:9001 (minioadmin/minioadmin)
 - **MailHog:** http://localhost:8025
 

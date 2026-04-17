@@ -2,13 +2,18 @@ package com.ween.service;
 
 import com.ween.dto.request.LoginRequest;
 import com.ween.dto.request.RegisterRequest;
+import com.ween.dto.request.RegisterOrganizationRequest;
 import com.ween.dto.request.ResetPasswordRequest;
+import com.ween.dto.response.AuthResponse;
+import com.ween.dto.response.UserResponse;
 import com.ween.entity.User;
+import com.ween.entity.Organization;
 import com.ween.enums.UserRole;
 import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.exception.UnauthorizedException;
 import com.ween.repository.UserRepository;
+import com.ween.repository.OrganizationRepository;
 import com.ween.security.JwtUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -22,6 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -30,13 +39,15 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     // private final EmailService emailService; // DISABLED
     private final CoinService coinService;
+    private final com.ween.repository.ReferralRepository referralRepository;
 
     @Transactional
-    public User register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request) {
         // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AlreadyExistsException("Email already registered: " + request.getEmail());
@@ -53,6 +64,13 @@ public class AuthService {
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
+                .birthDate(request.getBirthDate())
+                .phone(request.getPhone())
+                .university(request.getUniversity())
+                .major(request.getMajor())
+                .course(request.getCourse())
+                .interests(convertToJsonArray(request.getInterests()))
+                .skills(convertToJsonArray(request.getSkills()))
                 .role(UserRole.VOLUNTEER)
                 .referralCode(generateReferralCode())
                 .weenCoinBalance(0)
@@ -77,8 +95,8 @@ public class AuthService {
                         .referredId(savedUser.getId())
                         .coinAwarded(false)
                         .build();
+                referralRepository.save(referral);
                 
-                com.ween.repository.ReferralRepository referralRepo = null; // Will be injected in production
                 // Award coins asynchronously
                 coinService.awardReferralBonus(referrer.getId(), savedUser.getId());
                 coinService.credit(savedUser.getId(), 100, com.ween.enums.CoinReason.REFERRAL, referrer.getId());
@@ -88,17 +106,81 @@ public class AuthService {
             }
         }
 
-        // Send welcome email asynchronously (DISABLED)
-        // try {
-        //     emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFullName());
-        // } catch (Exception e) {
-        //     log.warn("Failed to send welcome email", e);
-        // }
+        // Generate tokens for immediate login
+        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(savedUser.getId());
 
-        return savedUser;
+        UserResponse userResponse = UserResponse.builder()
+                .id(savedUser.getId())
+                .username(savedUser.getUsername())
+                .email(savedUser.getEmail())
+                .fullName(savedUser.getFullName())
+                .role(savedUser.getRole())
+                .weenCoinBalance(savedUser.getWeenCoinBalance())
+                .build();
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
+                .expiresIn(jwtUtil.getAccessTokenExpiration())
+                .build();
     }
 
-    public Map<String, Object> login(LoginRequest request) {
+    @Transactional
+    public AuthResponse registerOrganization(RegisterOrganizationRequest request) {
+        // Generate unique email and username for the organization
+        String orgEmail = "org_" + UUID.randomUUID().toString().substring(0, 8).toLowerCase() + "@ween.org";
+        String orgUsername = "org_" + request.getOrganizationName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase()
+                + "_" + UUID.randomUUID().toString().substring(0, 4).toLowerCase();
+
+        // Create organization admin user account
+        User orgAdminUser = User.builder()
+                .username(orgUsername)
+                .email(orgEmail)
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getOrganizationName())
+                .role(UserRole.ORGANIZATION_ADMIN)
+                .referralCode(generateReferralCode())
+                .weenCoinBalance(0)
+                .build();
+
+        User savedOrgAdminUser = userRepository.save(orgAdminUser);
+        log.info("Organization admin user created: {}", savedOrgAdminUser.getEmail());
+
+        // Create organization
+        Organization organization = Organization.builder()
+                .name(request.getOrganizationName())
+                .description(request.getDescription())
+                .ownerId(savedOrgAdminUser.getId())
+                .isVerified(false)
+                .build();
+
+        organizationRepository.save(organization);
+        log.info("Organization created: {}", organization.getName());
+
+        // Generate tokens for immediate login
+        String accessToken = jwtUtil.generateAccessToken(savedOrgAdminUser.getId(), savedOrgAdminUser.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(savedOrgAdminUser.getId());
+
+        UserResponse userResponse = UserResponse.builder()
+                .id(savedOrgAdminUser.getId())
+                .username(savedOrgAdminUser.getUsername())
+                .email(savedOrgAdminUser.getEmail())
+                .fullName(savedOrgAdminUser.getFullName())
+                .role(savedOrgAdminUser.getRole())
+                .weenCoinBalance(savedOrgAdminUser.getWeenCoinBalance())
+                .build();
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
+                .expiresIn(jwtUtil.getAccessTokenExpiration())
+                .build();
+    }
+
+    public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
 
@@ -111,15 +193,21 @@ public class AuthService {
 
         log.info("User logged in successfully: {}", user.getEmail());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("accessToken", accessToken);
-        response.put("refreshToken", refreshToken);
-        response.put("userId", user.getId());
-        response.put("email", user.getEmail());
-        response.put("username", user.getUsername());
-        response.put("role", user.getRole());
+        UserResponse userResponse = UserResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .role(user.getRole())
+                .weenCoinBalance(user.getWeenCoinBalance())
+                .build();
 
-        return response;
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .user(userResponse)
+                .expiresIn(jwtUtil.getAccessTokenExpiration())
+                .build();
     }
 
     public String refreshToken(String refreshTokenStr) {
@@ -189,6 +277,25 @@ public class AuthService {
 
     private String generateReferralCode() {
         return UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    private String convertToJsonArray(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            // Split by comma and create JSON array
+            List<String> items = Arrays.asList(value.split(","));
+            List<String> trimmedItems = new ArrayList<>();
+            for (String item : items) {
+                trimmedItems.add(item.trim());
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(trimmedItems);
+        } catch (Exception e) {
+            log.warn("Failed to convert string to JSON array: {}", value, e);
+            return null;
+        }
     }
 
     public void logout() {

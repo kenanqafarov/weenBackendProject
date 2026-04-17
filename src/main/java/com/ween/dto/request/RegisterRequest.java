@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,6 +29,24 @@ public class RegisterRequest {
     @NotBlank(message = "Full name is required")
     @Size(max = 120, message = "Full name must not exceed 120 characters")
     private String fullName;
+    
+    private LocalDate birthDate;
+    
+    @Size(max = 20, message = "Phone must not exceed 20 characters")
+    private String phone;
+    
+    @Size(max = 150, message = "University must not exceed 150 characters")
+    private String university;
+    
+    @Size(max = 100, message = "Major must not exceed 100 characters")
+    private String major;
+    
+    @Size(min = 1, message = "Course must be selected")
+    private String course;
+    
+    private String interests;
+    
+    private String skills;
     
     private String referralCode;
 }

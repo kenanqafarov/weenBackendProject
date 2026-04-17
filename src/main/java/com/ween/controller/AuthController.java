@@ -32,7 +32,7 @@ public class AuthController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "User already exists")
     })
-    public ResponseEntity<ApiResponse<User>> register(
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
             @Parameter(description = "Optional referral code")
             @RequestParam(value = "ref", required = false) String referralCode) {
@@ -40,11 +40,30 @@ public class AuthController {
             if (referralCode != null && !referralCode.isEmpty()) {
                 request.setReferralCode(referralCode);
             }
-            User response = authService.register(request);
+            AuthResponse response = authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok(response, "User registered successfully"));
         } catch (Exception e) {
             log.error("Registration failed", e);
+            throw e;
+        }
+    }
+
+    @PostMapping("/register/organization")
+    @Operation(summary = "Register new organization", description = "Create a new organization account")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Organization registered successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Organization already exists")
+    })
+    public ResponseEntity<ApiResponse<AuthResponse>> registerOrganization(
+            @Valid @RequestBody RegisterOrganizationRequest request) {
+        try {
+            AuthResponse response = authService.registerOrganization(request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.ok(response, "Organization registered successfully"));
+        } catch (Exception e) {
+            log.error("Organization registration failed", e);
             throw e;
         }
     }
@@ -58,7 +77,7 @@ public class AuthController {
     })
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         try {
-            AuthResponse response = (AuthResponse) authService.login(request);
+            AuthResponse response = authService.login(request);
             return ResponseEntity.ok(ApiResponse.ok(response, "Login successful"));
         } catch (Exception e) {
             log.error("Login failed for email: {}", request.getEmail(), e);

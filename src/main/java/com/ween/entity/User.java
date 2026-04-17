@@ -45,6 +45,9 @@ public class User extends BaseEntity {
     @Column(length = 100)
     private String major;
 
+    @Column(length = 10)
+    private String course;
+
     @Column(columnDefinition = "TEXT")
     private String bio;
 
