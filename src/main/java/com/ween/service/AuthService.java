@@ -107,7 +107,7 @@ public class AuthService {
         }
 
         // Generate tokens for immediate login
-        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(savedUser.getId(), savedUser.getEmail(),savedUser.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(savedUser.getId());
 
         UserResponse userResponse = UserResponse.builder()
@@ -129,10 +129,19 @@ public class AuthService {
 
     @Transactional
     public AuthResponse registerOrganization(RegisterOrganizationRequest request) {
-        // Generate unique email and username for the organization
-        String orgEmail = "org_" + UUID.randomUUID().toString().substring(0, 8).toLowerCase() + "@ween.org";
-        String orgUsername = "org_" + request.getOrganizationName().replaceAll("[^a-zA-Z0-9]", "").toLowerCase()
-                + "_" + UUID.randomUUID().toString().substring(0, 4).toLowerCase();
+        // Extract email and username from request
+        String orgEmail = request.getEmail();
+        String orgUsername = request.getUsername();
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(orgEmail)) {
+            throw new AlreadyExistsException("Email already registered: " + orgEmail);
+        }
+
+        // Check if username already exists
+        if (userRepository.existsByUsername(orgUsername)) {
+            throw new AlreadyExistsException("Username already taken: " + orgUsername);
+        }
 
         // Create organization admin user account
         User orgAdminUser = User.builder()
@@ -142,7 +151,6 @@ public class AuthService {
                 .fullName(request.getOrganizationName())
                 .role(UserRole.ORGANIZATION_ADMIN)
                 .referralCode(generateReferralCode())
-                .weenCoinBalance(0)
                 .build();
 
         User savedOrgAdminUser = userRepository.save(orgAdminUser);
@@ -160,7 +168,7 @@ public class AuthService {
         log.info("Organization created: {}", organization.getName());
 
         // Generate tokens for immediate login
-        String accessToken = jwtUtil.generateAccessToken(savedOrgAdminUser.getId(), savedOrgAdminUser.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(savedOrgAdminUser.getId(), savedOrgAdminUser.getEmail(),savedOrgAdminUser.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(savedOrgAdminUser.getId());
 
         UserResponse userResponse = UserResponse.builder()
@@ -188,7 +196,7 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(),user.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         log.info("User logged in successfully: {}", user.getEmail());
@@ -216,7 +224,7 @@ public class AuthService {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
             
-            return jwtUtil.generateAccessToken(user.getId(), user.getEmail());
+            return jwtUtil.generateAccessToken(user.getId(), user.getEmail(),user.getRole());
         } catch (Exception e) {
             log.error("Failed to refresh token", e);
             throw new UnauthorizedException("Invalid refresh token");

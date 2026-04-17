@@ -1,5 +1,6 @@
 package com.ween.security;
 
+import com.ween.enums.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -30,8 +31,9 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateAccessToken(String userId, String email) {
+    public String generateAccessToken(String userId, String email,UserRole role) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
         claims.put("email", email);
         claims.put("type", "access");
         return createToken(claims, userId, accessTokenExpiry);
