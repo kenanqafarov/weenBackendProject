@@ -80,6 +80,10 @@ public class JwtUtil {
         }
     }
 
+    public long getAccessTokenExpiration() {
+        return accessTokenExpiry * 1000; // Convert to milliseconds
+    }
+
     public boolean isTokenExpired(String token) {
         try {
             Date expiration = extractClaims(token).getExpiration();

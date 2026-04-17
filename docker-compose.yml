@@ -78,7 +78,7 @@ services:
       ORGANIZER_API_KEY: dev-api-key-test
       CORS_ORIGINS: http://localhost:3000,http://localhost:3001
     ports:
-      - "8080:8080"
+      - "5000:5000"
     depends_on:
       mysql:
         condition: service_healthy

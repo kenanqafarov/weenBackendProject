@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-13T15:46:55+0400",
-    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
+    date = "2026-04-17T14:02:35+0400",
+    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 25.0.2 (Oracle Corporation)"
 )
 @Component
 public class CertificateMapperImpl implements CertificateMapper {
@@ -21,13 +21,13 @@ public class CertificateMapperImpl implements CertificateMapper {
 
         CertificateResponse.CertificateResponseBuilder certificateResponse = CertificateResponse.builder();
 
-        certificateResponse.id( certificate.getId() );
         certificateResponse.certificateNumber( certificate.getCertificateNumber() );
-        certificateResponse.userId( certificate.getUserId() );
         certificateResponse.eventId( certificate.getEventId() );
+        certificateResponse.id( certificate.getId() );
+        certificateResponse.issuedAt( certificate.getIssuedAt() );
         certificateResponse.pdfUrl( certificate.getPdfUrl() );
         certificateResponse.templateType( certificate.getTemplateType() );
-        certificateResponse.issuedAt( certificate.getIssuedAt() );
+        certificateResponse.userId( certificate.getUserId() );
 
         return certificateResponse.build();
     }
@@ -40,12 +40,12 @@ public class CertificateMapperImpl implements CertificateMapper {
 
         Certificate.CertificateBuilder certificate = Certificate.builder();
 
-        certificate.userId( certificateResponse.getUserId() );
-        certificate.eventId( certificateResponse.getEventId() );
         certificate.certificateNumber( certificateResponse.getCertificateNumber() );
+        certificate.eventId( certificateResponse.getEventId() );
+        certificate.issuedAt( certificateResponse.getIssuedAt() );
         certificate.pdfUrl( certificateResponse.getPdfUrl() );
         certificate.templateType( certificateResponse.getTemplateType() );
-        certificate.issuedAt( certificateResponse.getIssuedAt() );
+        certificate.userId( certificateResponse.getUserId() );
 
         return certificate.build();
     }

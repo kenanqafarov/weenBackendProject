@@ -30,4 +30,4 @@ ALTER TABLE leaderboard_entries ADD INDEX idx_period_scope_rank (period, scope, 
 
 -- Certificate indexes
 ALTER TABLE certificates ADD INDEX idx_user_created (user_id, created_at DESC);
-ADD INDEX idx_user_event (user_id, event_id);
+ALTER TABLE certificates ADD INDEX idx_user_event (user_id, event_id);

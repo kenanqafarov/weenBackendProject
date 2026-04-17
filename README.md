@@ -133,8 +133,8 @@ docker-compose up -d
 docker logs -f ween-backend
 
 # Access the application
-# API: http://localhost:8080
-# Swagger UI: http://localhost:8080/swagger-ui.html
+# API: http://localhost:5000
+# Swagger UI: http://localhost:5000/swagger-ui.html
 # MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
 # MailHog: http://localhost:8025
 ```
@@ -401,8 +401,8 @@ docker-compose restart app
 ## 📚 API Documentation
 
 OpenAPI/Swagger documentation available at:
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- Swagger UI: `http://localhost:5000/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:5000/v3/api-docs`
 
 ## 🐛 Troubleshooting
 
@@ -429,7 +429,7 @@ docker exec ween-redis redis-cli ping
 ```bash
 # Change port in docker-compose.yml:
 ports:
-  - "8081:8080"  # Changed from 8080:8080
+  - "8081:5000"  # Changed from 5000:5000
 ```
 
 ## 📖 Additional Documentation

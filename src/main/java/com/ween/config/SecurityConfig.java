@@ -34,7 +34,7 @@ public class SecurityConfig {
     private final ApiKeyFilter apiKeyFilter;
     private final UserDetailsService userDetailsService;
 
-    @Value("${ween.cors.allowed-origins:http://localhost:3000}")
+    @Value("${ween.cors.allowed-origins:http://localhost:3000,http://localhost:3001,http://localhost:5000,http://localhost:5001,http://localhost:5173,http://localhost:8080}")
     private String allowedOrigins;
 
     @Bean
