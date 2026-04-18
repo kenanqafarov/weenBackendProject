@@ -3,7 +3,6 @@ package com.ween.controller;
 import com.ween.dto.response.AdminStatsResponse;
 import com.ween.dto.response.ApiResponse;
 import com.ween.dto.response.OrganizationResponse;
-import com.ween.dto.response.UserResponse;
 import com.ween.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,11 +37,11 @@ public class AdminController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin access required")
     })
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(
+    public ResponseEntity<ApiResponse<Page<com.ween.dto.response.UserResponse>>> getAllUsers(
             @Parameter(description = "Filter by username or email") @RequestParam(required = false) String search,
             @PageableDefault(size = 50) Pageable pageable) {
         try {
-            Page<UserResponse> response = adminService.getAllUsers(search, pageable);
+            Page<com.ween.dto.response.UserResponse> response = adminService.getAllUsers(search, pageable);
             return ResponseEntity.ok(ApiResponse.ok(response, "Users retrieved successfully"));
         } catch (Exception e) {
             log.error("Failed to retrieve users", e);
@@ -60,12 +59,12 @@ public class AdminController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Admin access required"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found")
     })
-    public ResponseEntity<ApiResponse<UserResponse>> banUnbanUser(
+    public ResponseEntity<ApiResponse<com.ween.dto.response.UserResponse>> banUnbanUser(
             @Parameter(description = "User ID", required = true) @PathVariable String id,
             @Parameter(description = "Ban status (true to ban, false to unban)", required = true) @RequestParam Boolean ban,
             @Parameter(description = "Ban reason") @RequestParam(required = false) String reason) {
         try {
-            UserResponse response = adminService.banUnbanUser(id, ban, reason);
+            com.ween.dto.response.UserResponse response = adminService.banUnbanUser(id, ban, reason);
             return ResponseEntity.ok(ApiResponse.ok(response, 
                     ban ? "User banned successfully" : "User unbanned successfully"));
         } catch (Exception e) {
