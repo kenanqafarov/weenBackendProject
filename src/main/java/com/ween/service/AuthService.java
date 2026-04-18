@@ -4,6 +4,7 @@ import com.ween.dto.request.LoginRequest;
 import com.ween.dto.request.RegisterRequest;
 import com.ween.dto.request.RegisterOrganizationRequest;
 import com.ween.dto.request.ResetPasswordRequest;
+import com.ween.dto.request.ChangePasswordRequest;
 import com.ween.dto.response.AuthResponse;
 import com.ween.dto.response.UserResponse;
 import com.ween.entity.User;
@@ -15,6 +16,7 @@ import com.ween.exception.UnauthorizedException;
 import com.ween.repository.UserRepository;
 import com.ween.repository.OrganizationRepository;
 import com.ween.security.JwtUtil;
+import com.ween.security.SecurityUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -41,8 +43,9 @@ public class AuthService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityUtil securityUtil;
     private final JwtUtil jwtUtil;
-    // private final EmailService emailService; // DISABLED
+    //private final EmailService emailService; // DISABLED
     private final CoinService coinService;
     private final com.ween.repository.ReferralRepository referralRepository;
 
@@ -270,17 +273,27 @@ public class AuthService {
     }
 
     @Transactional
-    public void changePassword(String userId, String currentPassword, String newPassword) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    public void changePassword(String token, @Valid ChangePasswordRequest request) {
+        try {
+            if (!jwtUtil.validateToken(token)) {
+                throw new UnauthorizedException("Invalid or expired token");
+            }
+            
+            String userId = jwtUtil.extractUserId(token);
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new UnauthorizedException("Current password is incorrect");
+            if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+                throw new UnauthorizedException("Current password is incorrect");
+            }
+
+            user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(user);
+            log.info("Password changed successfully for user: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to change password with token", e);
+            throw new UnauthorizedException("Invalid token or password change failed");
         }
-
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-        userRepository.save(user);
-        log.info("Password changed successfully for user: {}", user.getEmail());
     }
 
     private String generateReferralCode() {
@@ -306,7 +319,18 @@ public class AuthService {
         }
     }
 
+    @Transactional
     public void logout() {
+        try {
+            String userId = securityUtil.getCurrentUserId();
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            
+            log.info("User logged out successfully: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Logout process error for user", e);
+            throw new UnauthorizedException("Logout failed");
+        }
     }
 
     public void verifyEmail(String token) {

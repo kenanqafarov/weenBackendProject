@@ -4,10 +4,12 @@ import com.ween.dto.request.*;
 import com.ween.dto.response.ApiResponse;
 import com.ween.dto.response.AuthResponse;
 import com.ween.entity.User;
+import com.ween.exception.UnauthorizedException;
 import com.ween.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +104,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @SecurityRequirement(name = "Bearer Authentication")
     @Operation(summary = "User logout", description = "Invalidate the current access token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful"),
@@ -151,7 +154,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/reset-password")
+/*    @PostMapping("/reset-password")
     @Operation(summary = "Reset password", description = "Reset user password using reset token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
@@ -163,6 +166,32 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.ok(null, "Password reset successfully"));
         } catch (Exception e) {
             log.error("Password reset failed", e);
+            throw e;
+        }
+    }*/
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password", description = "Change user password by providing access token (extracts user ID from token)")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid current password"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired token")
+    })
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @Parameter(description = "Access token", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            if (authHeader == null || authHeader.isEmpty()) {
+                throw new UnauthorizedException("Authorization header is required");
+            }
+            
+            // Extract token from "Bearer <token>" header
+            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
+            authService.changePassword(token, request);
+            return ResponseEntity.ok(ApiResponse.ok(null, "Password changed successfully"));
+        } catch (Exception e) {
+            log.error("Password change failed", e);
             throw e;
         }
     }
