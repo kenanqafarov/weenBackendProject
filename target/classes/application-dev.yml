@@ -21,6 +21,7 @@ spring:
           auth: true
           starttls:
             enable: true
+          # For local development, you can disable SSL verification (not recommended for production)
 
 logging:
   level:
