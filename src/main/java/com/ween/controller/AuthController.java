@@ -4,7 +4,7 @@ import com.ween.dto.request.*;
 import com.ween.dto.response.ApiResponse;
 import com.ween.dto.response.AuthResponse;
 import com.ween.entity.User;
-import com.ween.exception.UnauthorizedException;
+import com.ween.exception.InvalidTokenException;
 import com.ween.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -120,16 +122,25 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/verify-email")
+    @RequestMapping(value = "/verify-email", method = {RequestMethod.GET, RequestMethod.POST})
     @Operation(summary = "Verify email address", description = "Verify user email using verification token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
     })
     public ResponseEntity<ApiResponse<Void>> verifyEmail(
-            @Parameter(description = "Email verification token", required = true)
-            @RequestParam(value = "token") String token) {
+            @RequestBody(required = false) VerifyEmailRequest request,
+            @RequestParam(value = "token", required = false) String tokenParam) {
         try {
+            String token = Optional.ofNullable(request)
+                    .map(VerifyEmailRequest::getToken)
+                    .filter(value -> !value.isBlank())
+                    .orElse(tokenParam);
+
+            if (token == null || token.isBlank()) {
+                throw new InvalidTokenException("Verification token is required");
+            }
+
             authService.verifyEmail(token);
             return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
         } catch (Exception e) {
@@ -154,7 +165,7 @@ public class AuthController {
         }
     }
 
-/*    @PostMapping("/reset-password")
+    @PostMapping("/reset-password")
     @Operation(summary = "Reset password", description = "Reset user password using reset token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
@@ -162,33 +173,25 @@ public class AuthController {
     })
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
-            authService.resetPassword(request);
+            authService.resetPasswordWithToken(request);
             return ResponseEntity.ok(ApiResponse.ok(null, "Password reset successfully"));
         } catch (Exception e) {
             log.error("Password reset failed", e);
             throw e;
         }
-    }*/
+    }
 
     @PostMapping("/change-password")
-    @Operation(summary = "Change password", description = "Change user password by providing access token (extracts user ID from token)")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Change password", description = "Change current user password using old and new password")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid current password"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired token")
     })
-    public ResponseEntity<ApiResponse<Void>> changePassword(
-            @Parameter(description = "Access token", required = true, example = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
-            @Valid @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         try {
-            if (authHeader == null || authHeader.isEmpty()) {
-                throw new UnauthorizedException("Authorization header is required");
-            }
-            
-            // Extract token from "Bearer <token>" header
-            String token = authHeader.startsWith("Bearer ") ? authHeader.substring(7) : authHeader;
-            authService.changePassword(token, request);
+            authService.changePasswordForCurrentUser(request);
             return ResponseEntity.ok(ApiResponse.ok(null, "Password changed successfully"));
         } catch (Exception e) {
             log.error("Password change failed", e);

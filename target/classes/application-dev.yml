@@ -11,8 +11,17 @@ spring:
     host: localhost
     port: 6379
   mail:
-    host: localhost
-    port: 1025
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:weenorganization@gmail.com}
+    password: "${MAIL_PASSWORD:kkhs sgna fdfi kmyg}"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          # For local development, you can disable SSL verification (not recommended for production)
 
 logging:
   level:
@@ -28,6 +37,11 @@ ween:
     refresh-token-expiry: 604800
   aes:
     secret-key: dev-16-char-key1
+  mail:
+    from: ${MAIL_FROM:weenorganization@gmail.com}
+  frontend:
+    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5000/verify-email}
+    reset-password-url: ${RESET_PASSWORD_URL:http://localhost:5173/change-password}
   api-key: dev-api-key-test
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://localhost:5173

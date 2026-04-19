@@ -58,7 +58,7 @@ public class User extends BaseEntity {
     private Integer weenCoinBalance = 0;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private UserRole role = UserRole.VOLUNTEER;
 
     @Column(name = "is_email_verified")

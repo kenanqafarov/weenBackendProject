@@ -31,4 +31,5 @@ public class UserResponse {
     private String interests;
     private String skills;
     private String referralCode;
+    private String category;
 }

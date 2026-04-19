@@ -4,12 +4,14 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-RUN mvn clean package -DskipTests -q
+RUN mvn clean package -Dmaven.test.skip=true -q
 
-FROM eclipse-temurin:17-jre-slim
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
 COPY --from=builder /app/target/ween-backend-1.0.0.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 5000
+
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS:-} -jar app.jar"]

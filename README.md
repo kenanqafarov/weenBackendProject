@@ -139,6 +139,49 @@ docker logs -f ween-backend
 # MailHog: http://localhost:8025
 ```
 
+### Deploying on Render
+
+This project includes a `render.yaml` blueprint for a Docker-based web service.
+
+1. Render does not provide a managed MySQL database, so you must use an external MySQL provider (PlanetScale, Aiven, DigitalOcean Managed MySQL, Railway, etc.).
+2. In Render, create a new Web Service from this repository and use the Dockerfile.
+3. Set the service environment to `prod` via `SPRING_PROFILES_ACTIVE=prod`.
+4. Fill the required environment variables in Render:
+  - `DB_URL`
+  - `DB_USERNAME`
+  - `DB_PASSWORD`
+  - `MAIL_HOST`
+  - `MAIL_USERNAME`
+  - `MAIL_PASSWORD`
+  - `JWT_SECRET`
+  - `AES_SECRET_KEY`
+  - `ORGANIZER_API_KEY`
+  - `CORS_ORIGINS`
+5. Keep the public URLs aligned with your frontend:
+  - `VERIFY_EMAIL_URL=https://ween.az/verify-email`
+  - `RESET_PASSWORD_URL=https://ween.az/change-password`
+6. Deploy. Render will set `PORT` automatically; the app reads it from the environment.
+
+Important: if any of `DB_URL`, `DB_USERNAME`, or `DB_PASSWORD` are missing, the app will start and then fail during JPA initialization.
+
+### MySQL Connection Example
+
+Use a real public MySQL endpoint, not localhost:
+
+```text
+DB_URL=jdbc:mysql://YOUR_MYSQL_HOST:3306/YOUR_DB?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+DB_USERNAME=YOUR_DB_USER
+DB_PASSWORD=YOUR_DB_PASSWORD
+```
+
+If `DB_URL` points to `localhost`, the Render service will fail because `localhost` is the container itself.
+
+### Render Notes
+
+- The app uses `PORT` from the environment, so do not hardcode a different server port in Render.
+- Swagger remains available at `/swagger-ui.html`.
+- For email sending, use a Gmail App Password in `MAIL_PASSWORD` and the Gmail address in `MAIL_USERNAME`.
+
 ### Local Development
 
 ```bash

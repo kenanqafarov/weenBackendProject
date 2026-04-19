@@ -2,7 +2,6 @@ package com.ween.service;
 
 import com.ween.dto.response.AdminStatsResponse;
 import com.ween.dto.response.OrganizationResponse;
-import com.ween.dto.response.UserResponse;
 import com.ween.entity.Organization;
 import com.ween.entity.User;
 import com.ween.mapper.OrganizationMapper;
@@ -35,7 +34,7 @@ public class AdminService {
     private final UserMapper userMapper;
     private final OrganizationMapper organizationMapper;
 
-    public Page<UserResponse> getAllUsers(String search, Pageable pageable) {
+    public Page<com.ween.dto.response.UserResponse> getAllUsers(String search, Pageable pageable) {
         log.debug("Fetching all users with search: {}", search);
         
         Page<User> users;
@@ -170,7 +169,7 @@ public class AdminService {
         log.info("Organization deleted successfully: {}", organizationId);
     }
 
-    public UserResponse banUnbanUser(String id, Boolean ban, String reason) {
+    public com.ween.dto.response.UserResponse banUnbanUser(String id, Boolean ban, String reason) {
         return null;
     }
 

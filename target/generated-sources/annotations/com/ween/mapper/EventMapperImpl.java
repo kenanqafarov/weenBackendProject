@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T17:19:15+0400",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
+    date = "2026-04-19T04:10:46+0400",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
 public class EventMapperImpl implements EventMapper {
@@ -22,21 +22,21 @@ public class EventMapperImpl implements EventMapper {
 
         EventResponse.EventResponseBuilder eventResponse = EventResponse.builder();
 
-        eventResponse.address( event.getAddress() );
+        eventResponse.id( event.getId() );
+        eventResponse.title( event.getTitle() );
+        eventResponse.description( event.getDescription() );
         eventResponse.category( event.getCategory() );
         eventResponse.city( event.getCity() );
-        eventResponse.coverImageUrl( event.getCoverImageUrl() );
-        eventResponse.createdAt( event.getCreatedAt() );
-        eventResponse.description( event.getDescription() );
-        eventResponse.endDate( event.getEndDate() );
-        eventResponse.id( event.getId() );
+        eventResponse.address( event.getAddress() );
         eventResponse.isOnline( event.getIsOnline() );
+        eventResponse.startDate( event.getStartDate() );
+        eventResponse.endDate( event.getEndDate() );
+        eventResponse.registrationDeadline( event.getRegistrationDeadline() );
         eventResponse.maxParticipants( event.getMaxParticipants() );
         eventResponse.organizationId( event.getOrganizationId() );
-        eventResponse.registrationDeadline( event.getRegistrationDeadline() );
-        eventResponse.startDate( event.getStartDate() );
         eventResponse.status( event.getStatus() );
-        eventResponse.title( event.getTitle() );
+        eventResponse.coverImageUrl( event.getCoverImageUrl() );
+        eventResponse.createdAt( event.getCreatedAt() );
         eventResponse.updatedAt( event.getUpdatedAt() );
 
         return eventResponse.build();
@@ -50,22 +50,22 @@ public class EventMapperImpl implements EventMapper {
 
         EventDetailResponse.EventDetailResponseBuilder eventDetailResponse = EventDetailResponse.builder();
 
-        eventDetailResponse.address( event.getAddress() );
+        eventDetailResponse.id( event.getId() );
+        eventDetailResponse.title( event.getTitle() );
+        eventDetailResponse.description( event.getDescription() );
         eventDetailResponse.category( event.getCategory() );
         eventDetailResponse.city( event.getCity() );
-        eventDetailResponse.coverImageUrl( event.getCoverImageUrl() );
-        eventDetailResponse.createdAt( event.getCreatedAt() );
-        eventDetailResponse.customFields( event.getCustomFields() );
-        eventDetailResponse.description( event.getDescription() );
-        eventDetailResponse.endDate( event.getEndDate() );
-        eventDetailResponse.id( event.getId() );
+        eventDetailResponse.address( event.getAddress() );
         eventDetailResponse.isOnline( event.getIsOnline() );
+        eventDetailResponse.startDate( event.getStartDate() );
+        eventDetailResponse.endDate( event.getEndDate() );
+        eventDetailResponse.registrationDeadline( event.getRegistrationDeadline() );
         eventDetailResponse.maxParticipants( event.getMaxParticipants() );
         eventDetailResponse.organizationId( event.getOrganizationId() );
-        eventDetailResponse.registrationDeadline( event.getRegistrationDeadline() );
-        eventDetailResponse.startDate( event.getStartDate() );
         eventDetailResponse.status( event.getStatus() );
-        eventDetailResponse.title( event.getTitle() );
+        eventDetailResponse.coverImageUrl( event.getCoverImageUrl() );
+        eventDetailResponse.customFields( event.getCustomFields() );
+        eventDetailResponse.createdAt( event.getCreatedAt() );
         eventDetailResponse.updatedAt( event.getUpdatedAt() );
 
         return eventDetailResponse.build();
@@ -79,19 +79,19 @@ public class EventMapperImpl implements EventMapper {
 
         Event.EventBuilder event = Event.builder();
 
-        event.address( eventResponse.getAddress() );
+        event.title( eventResponse.getTitle() );
+        event.description( eventResponse.getDescription() );
         event.category( eventResponse.getCategory() );
         event.city( eventResponse.getCity() );
-        event.coverImageUrl( eventResponse.getCoverImageUrl() );
-        event.description( eventResponse.getDescription() );
-        event.endDate( eventResponse.getEndDate() );
+        event.address( eventResponse.getAddress() );
         event.isOnline( eventResponse.getIsOnline() );
+        event.startDate( eventResponse.getStartDate() );
+        event.endDate( eventResponse.getEndDate() );
+        event.registrationDeadline( eventResponse.getRegistrationDeadline() );
         event.maxParticipants( eventResponse.getMaxParticipants() );
         event.organizationId( eventResponse.getOrganizationId() );
-        event.registrationDeadline( eventResponse.getRegistrationDeadline() );
-        event.startDate( eventResponse.getStartDate() );
         event.status( eventResponse.getStatus() );
-        event.title( eventResponse.getTitle() );
+        event.coverImageUrl( eventResponse.getCoverImageUrl() );
 
         return event.build();
     }

@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-18T17:19:15+0400",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 21.0.10 (Eclipse Adoptium)"
+    date = "2026-04-19T04:10:46+0400",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
 public class UserMapperImpl implements UserMapper {
@@ -22,24 +22,24 @@ public class UserMapperImpl implements UserMapper {
 
         UserResponse.UserResponseBuilder userResponse = UserResponse.builder();
 
-        userResponse.bio( user.getBio() );
-        userResponse.birthDate( user.getBirthDate() );
+        userResponse.id( user.getId() );
+        userResponse.username( user.getUsername() );
         userResponse.email( user.getEmail() );
         userResponse.fullName( user.getFullName() );
-        userResponse.githubUrl( user.getGithubUrl() );
-        userResponse.id( user.getId() );
-        userResponse.interests( user.getInterests() );
+        userResponse.birthDate( user.getBirthDate() );
+        userResponse.phone( user.getPhone() );
+        userResponse.university( user.getUniversity() );
+        userResponse.major( user.getMajor() );
+        userResponse.bio( user.getBio() );
+        userResponse.profilePhotoUrl( user.getProfilePhotoUrl() );
+        userResponse.weenCoinBalance( user.getWeenCoinBalance() );
+        userResponse.role( user.getRole() );
         userResponse.isEmailVerified( user.getIsEmailVerified() );
         userResponse.linkedinUrl( user.getLinkedinUrl() );
-        userResponse.major( user.getMajor() );
-        userResponse.phone( user.getPhone() );
-        userResponse.profilePhotoUrl( user.getProfilePhotoUrl() );
-        userResponse.referralCode( user.getReferralCode() );
-        userResponse.role( user.getRole() );
+        userResponse.githubUrl( user.getGithubUrl() );
+        userResponse.interests( user.getInterests() );
         userResponse.skills( user.getSkills() );
-        userResponse.university( user.getUniversity() );
-        userResponse.username( user.getUsername() );
-        userResponse.weenCoinBalance( user.getWeenCoinBalance() );
+        userResponse.referralCode( user.getReferralCode() );
 
         return userResponse.build();
     }
@@ -52,19 +52,19 @@ public class UserMapperImpl implements UserMapper {
 
         PublicProfileResponse.PublicProfileResponseBuilder publicProfileResponse = PublicProfileResponse.builder();
 
-        publicProfileResponse.bio( user.getBio() );
-        publicProfileResponse.birthDate( user.getBirthDate() );
-        publicProfileResponse.fullName( user.getFullName() );
-        publicProfileResponse.githubUrl( user.getGithubUrl() );
         publicProfileResponse.id( user.getId() );
-        publicProfileResponse.interests( user.getInterests() );
-        publicProfileResponse.linkedinUrl( user.getLinkedinUrl() );
-        publicProfileResponse.major( user.getMajor() );
-        publicProfileResponse.profilePhotoUrl( user.getProfilePhotoUrl() );
-        publicProfileResponse.skills( user.getSkills() );
-        publicProfileResponse.university( user.getUniversity() );
         publicProfileResponse.username( user.getUsername() );
+        publicProfileResponse.fullName( user.getFullName() );
+        publicProfileResponse.birthDate( user.getBirthDate() );
+        publicProfileResponse.university( user.getUniversity() );
+        publicProfileResponse.major( user.getMajor() );
+        publicProfileResponse.bio( user.getBio() );
+        publicProfileResponse.profilePhotoUrl( user.getProfilePhotoUrl() );
         publicProfileResponse.weenCoinBalance( user.getWeenCoinBalance() );
+        publicProfileResponse.linkedinUrl( user.getLinkedinUrl() );
+        publicProfileResponse.githubUrl( user.getGithubUrl() );
+        publicProfileResponse.interests( user.getInterests() );
+        publicProfileResponse.skills( user.getSkills() );
 
         return publicProfileResponse.build();
     }
