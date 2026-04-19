@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-17T14:02:35+0400",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 25.0.2 (Oracle Corporation)"
+    date = "2026-04-19T04:10:46+0400",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
 public class OrganizationMapperImpl implements OrganizationMapper {
@@ -21,17 +21,17 @@ public class OrganizationMapperImpl implements OrganizationMapper {
 
         OrganizationResponse.OrganizationResponseBuilder organizationResponse = OrganizationResponse.builder();
 
-        organizationResponse.contactEmail( organization.getContactEmail() );
-        organizationResponse.createdAt( organization.getCreatedAt() );
-        organizationResponse.description( organization.getDescription() );
         organizationResponse.id( organization.getId() );
-        organizationResponse.isVerified( organization.getIsVerified() );
-        organizationResponse.logoUrl( organization.getLogoUrl() );
         organizationResponse.name( organization.getName() );
-        organizationResponse.ownerId( organization.getOwnerId() );
-        organizationResponse.updatedAt( organization.getUpdatedAt() );
-        organizationResponse.verificationNote( organization.getVerificationNote() );
+        organizationResponse.description( organization.getDescription() );
+        organizationResponse.logoUrl( organization.getLogoUrl() );
+        organizationResponse.contactEmail( organization.getContactEmail() );
         organizationResponse.website( organization.getWebsite() );
+        organizationResponse.ownerId( organization.getOwnerId() );
+        organizationResponse.isVerified( organization.getIsVerified() );
+        organizationResponse.verificationNote( organization.getVerificationNote() );
+        organizationResponse.createdAt( organization.getCreatedAt() );
+        organizationResponse.updatedAt( organization.getUpdatedAt() );
 
         return organizationResponse.build();
     }

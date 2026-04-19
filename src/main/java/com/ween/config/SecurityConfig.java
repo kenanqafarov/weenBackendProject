@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -56,8 +57,17 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Auth endpoints - public
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                // Auth endpoints - public register/login/refresh, secured logout
+                .requestMatchers("POST", "/api/v1/auth/register").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/register/organization").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/login").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/refresh").permitAll()
+                .requestMatchers("GET", "/api/v1/auth/verify-email").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/verify-email").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/forgot-password").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/reset-password").permitAll()
+                .requestMatchers("POST", "/api/v1/auth/change-password").authenticated()
+                .requestMatchers("POST", "/api/v1/auth/logout").authenticated()
                 
                 // Events - public read, requires auth for write
                 .requestMatchers("GET", "/api/v1/events").permitAll()
@@ -130,7 +140,22 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+
+        List<String> configuredOrigins = Arrays.stream(allowedOrigins.split(","))
+            .map(String::trim)
+            .filter(origin -> !origin.isBlank())
+            .collect(Collectors.toList());
+
+        // Keep exact origins and wildcard patterns separate for proper credential support.
+        List<String> exactOrigins = configuredOrigins.stream()
+            .filter(origin -> !origin.contains("*"))
+            .collect(Collectors.toList());
+        List<String> originPatterns = configuredOrigins.stream()
+            .filter(origin -> origin.contains("*"))
+            .collect(Collectors.toList());
+
+        configuration.setAllowedOrigins(exactOrigins);
+        configuration.setAllowedOriginPatterns(originPatterns);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

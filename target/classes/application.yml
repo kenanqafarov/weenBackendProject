@@ -23,35 +23,24 @@ spring:
         order_inserts: true
         order_updates: true
 
-  # Redis Configuration (DISABLED)
-  # redis:
-  #   host: ${REDIS_HOST:localhost}
-  #   port: 6379
-  #   timeout: 60000ms
-  #   lettuce:
-  #     pool:
-  #       max-active: 20
-  #       max-idle: 10
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:weenorganization@gmail.com}
+    password: "${MAIL_PASSWORD:kkhs sgna fdfi kmyg}"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   flyway:
     enabled: false
     # locations: classpath:db/migration
 
-  # Mail Configuration (DISABLED)
-  # mail:
-  #   host: ${MAIL_HOST:localhost}
-  #   port: 1025
-  #   username: ${MAIL_USERNAME:}
-  #   password: ${MAIL_PASSWORD:}
-  #   properties:
-  #     mail:
-  #       smtp:
-  #         auth: false
-  #         starttls:
-  #           enable: false
-
 server:
-  port: 5000
+  port: ${PORT:5000}
   servlet:
     context-path: /
 
@@ -72,10 +61,13 @@ ween:
   firebase:
     credentials-path: ${FIREBASE_CREDS_PATH:/app/config/firebase-admin-key.json}
   mail:
-    from: ${MAIL_FROM:noreply@ween.az}
+    from: ${MAIL_FROM:weenorganization@gmail.com}
+  frontend:
+    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5000/verify-email}
+    reset-password-url: ${RESET_PASSWORD_URL:https://ween.az/change-password}
   api-key: ${ORGANIZER_API_KEY:your-api-key-here}
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5000}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5000,http://localhost:5173,https://ween.az,https://api.ween.az}
   app:
     name: Ween
 

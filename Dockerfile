@@ -12,4 +12,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/ween-backend-1.0.0.jar app.jar
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+EXPOSE 5000
+
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS:-} -jar app.jar"]

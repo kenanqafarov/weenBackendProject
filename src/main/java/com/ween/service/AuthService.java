@@ -1,29 +1,40 @@
 package com.ween.service;
 
 import com.ween.dto.request.LoginRequest;
+import com.ween.dto.request.ChangePasswordRequest;
 import com.ween.dto.request.RegisterRequest;
 import com.ween.dto.request.RegisterOrganizationRequest;
 import com.ween.dto.request.ResetPasswordRequest;
 import com.ween.dto.response.AuthResponse;
 import com.ween.dto.response.UserResponse;
+import com.ween.entity.EmailVerificationToken;
+import com.ween.entity.PasswordResetToken;
 import com.ween.entity.User;
 import com.ween.entity.Organization;
 import com.ween.enums.UserRole;
 import com.ween.exception.AlreadyExistsException;
+import com.ween.exception.InvalidTokenException;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.exception.UnauthorizedException;
+import com.ween.repository.EmailVerificationTokenRepository;
+import com.ween.repository.PasswordResetTokenRepository;
 import com.ween.repository.UserRepository;
 import com.ween.repository.OrganizationRepository;
 import com.ween.security.JwtUtil;
+import com.ween.security.SecurityUtil;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -41,10 +52,19 @@ public class AuthService {
     private final UserRepository userRepository;
     private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SecurityUtil securityUtil;
     private final JwtUtil jwtUtil;
-    // private final EmailService emailService; // DISABLED
+    private final EmailService emailService;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final CoinService coinService;
     private final com.ween.repository.ReferralRepository referralRepository;
+
+    @Value("${ween.frontend.verify-url:https://ween.az/verify}")
+    private String verifyEmailBaseUrl;
+
+    @Value("${ween.frontend.reset-password-url:https://ween.az/change-password}")
+    private String resetPasswordBaseUrl;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -78,6 +98,13 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
         log.info("User registered successfully: {}", savedUser.getEmail());
+
+        try {
+            createAndSendEmailVerification(savedUser);
+        } catch (Exception e) {
+            // Registration should still succeed even if email provider is temporarily unavailable.
+            log.error("Failed to create/send verification email for user: {}", savedUser.getEmail(), e);
+        }
 
         // Award signup bonus
         coinService.awardSignupBonus(savedUser.getId());
@@ -116,6 +143,7 @@ public class AuthService {
                 .email(savedUser.getEmail())
                 .fullName(savedUser.getFullName())
                 .role(savedUser.getRole())
+            .isEmailVerified(savedUser.getIsEmailVerified())
                 .weenCoinBalance(savedUser.getWeenCoinBalance())
                 .build();
 
@@ -177,6 +205,7 @@ public class AuthService {
                 .email(savedOrgAdminUser.getEmail())
                 .fullName(savedOrgAdminUser.getFullName())
                 .role(savedOrgAdminUser.getRole())
+            .isEmailVerified(savedOrgAdminUser.getIsEmailVerified())
                 .weenCoinBalance(savedOrgAdminUser.getWeenCoinBalance())
                 .build();
 
@@ -207,6 +236,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+            .isEmailVerified(user.getIsEmailVerified())
                 .weenCoinBalance(user.getWeenCoinBalance())
                 .build();
 
@@ -236,49 +266,69 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
-        String resetToken = jwtUtil.generateRefreshToken(user.getId());
-        
-        // In production, store this token in Redis with expiration
-        // For now, send the link via email
-        String resetLink = "https://app.ween.com/reset-password?token=" + resetToken;
-        
-        // Send password reset email (DISABLED)
-        // try {
-        //     emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetLink);
-        //     log.info("Password reset email sent to: {}", email);
-        // } catch (Exception e) {
-        //     log.error("Failed to send password reset email", e);
-        //     throw new RuntimeException("Failed to send password reset email");
-        // }
-        log.info("Password reset requested for: {}", email);
+        passwordResetTokenRepository.deleteByUserId(user.getId());
+
+        String rawToken = UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+        PasswordResetToken token = PasswordResetToken.builder()
+            .userId(user.getId())
+            .token(rawToken)
+            .expiresAt(expiresAt)
+            .isUsed(false)
+            .build();
+        passwordResetTokenRepository.save(token);
+
+        String resetLink = resetPasswordBaseUrl + "?token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetLink);
+        log.info("Password reset email sent to: {}", email);
     }
 
     @Transactional
-    public void resetPassword(String resetToken, String newPassword) {
-        try {
-            String userId = jwtUtil.extractUserId(resetToken);
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-            user.setPasswordHash(passwordEncoder.encode(newPassword));
-            userRepository.save(user);
-            log.info("Password reset successfully for user: {}", user.getEmail());
-        } catch (Exception e) {
-            log.error("Failed to reset password", e);
-            throw new UnauthorizedException("Invalid or expired reset token");
+    public void resetPasswordWithToken(@Valid ResetPasswordRequest request) {
+        String token = request.getToken();
+        if (token == null || token.isBlank()) {
+            throw new InvalidTokenException("Reset token is required");
         }
+
+        PasswordResetToken passwordResetToken = passwordResetTokenRepository
+                .findByTokenAndIsUsedFalse(token)
+                .orElseThrow(() -> new InvalidTokenException("Invalid reset token"));
+
+        if (passwordResetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("Reset token has expired");
+        }
+
+        User user = userRepository.findById(passwordResetToken.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Invalidate token immediately after successful password reset.
+        passwordResetToken.setIsUsed(true);
+        passwordResetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(passwordResetToken);
+
+        log.info("Password reset successfully via token for user: {}", user.getEmail());
     }
 
     @Transactional
-    public void changePassword(String userId, String currentPassword, String newPassword) {
+    public void changePasswordForCurrentUser(@Valid ChangePasswordRequest request) {
+        String oldPassword = request.getOldPassword();
+        if (oldPassword == null || oldPassword.isBlank()) {
+            throw new UnauthorizedException("Old password is required");
+        }
+
+        String userId = securityUtil.getCurrentUserId();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
-            throw new UnauthorizedException("Current password is incorrect");
+        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+            throw new UnauthorizedException("Old password is incorrect");
         }
 
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         log.info("Password changed successfully for user: {}", user.getEmail());
     }
@@ -306,15 +356,62 @@ public class AuthService {
         }
     }
 
+    @Transactional
     public void logout() {
+        try {
+            String userId = securityUtil.getCurrentUserId();
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+            
+            log.info("User logged out successfully: {}", user.getEmail());
+        } catch (Exception e) {
+            log.error("Logout process error for user", e);
+            throw new UnauthorizedException("Logout failed");
+        }
     }
 
     public void verifyEmail(String token) {
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository
+            .findByTokenAndIsUsedFalse(token)
+            .orElseThrow(() -> new InvalidTokenException("Invalid verification token"));
+
+        if (verificationToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidTokenException("Verification token has expired");
+        }
+
+        User user = userRepository.findById(verificationToken.getUserId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        user.setIsEmailVerified(true);
+        userRepository.save(user);
+
+        verificationToken.setIsUsed(true);
+        verificationToken.setVerifiedAt(LocalDateTime.now());
+        emailVerificationTokenRepository.save(verificationToken);
+
+        log.info("Email verified successfully for user: {}", user.getEmail());
     }
 
     public void sendPasswordResetLink(@NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email) {
+        initiatePasswordReset(email);
     }
 
-    public void resetPassword(@Valid ResetPasswordRequest request) {
+    private void createAndSendEmailVerification(User user) {
+        emailVerificationTokenRepository.deleteByUserId(user.getId());
+
+        String rawToken = UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+        EmailVerificationToken token = EmailVerificationToken.builder()
+                .userId(user.getId())
+                .token(rawToken)
+                .expiresAt(expiresAt)
+                .isUsed(false)
+                .build();
+
+        emailVerificationTokenRepository.save(token);
+
+        String verificationLink = verifyEmailBaseUrl + "?token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        emailService.sendVerificationEmail(user.getEmail(), user.getFullName(), verificationLink);
     }
 }

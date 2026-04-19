@@ -4,10 +4,12 @@ import com.ween.dto.request.*;
 import com.ween.dto.response.ApiResponse;
 import com.ween.dto.response.AuthResponse;
 import com.ween.entity.User;
+import com.ween.exception.InvalidTokenException;
 import com.ween.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -102,6 +106,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @SecurityRequirement(name = "Bearer Authentication")
     @Operation(summary = "User logout", description = "Invalidate the current access token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful"),
@@ -117,16 +122,25 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/verify-email")
+    @RequestMapping(value = "/verify-email", method = {RequestMethod.GET, RequestMethod.POST})
     @Operation(summary = "Verify email address", description = "Verify user email using verification token")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
     })
     public ResponseEntity<ApiResponse<Void>> verifyEmail(
-            @Parameter(description = "Email verification token", required = true)
-            @RequestParam(value = "token") String token) {
+            @RequestBody(required = false) VerifyEmailRequest request,
+            @RequestParam(value = "token", required = false) String tokenParam) {
         try {
+            String token = Optional.ofNullable(request)
+                    .map(VerifyEmailRequest::getToken)
+                    .filter(value -> !value.isBlank())
+                    .orElse(tokenParam);
+
+            if (token == null || token.isBlank()) {
+                throw new InvalidTokenException("Verification token is required");
+            }
+
             authService.verifyEmail(token);
             return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
         } catch (Exception e) {
@@ -159,10 +173,28 @@ public class AuthController {
     })
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
-            authService.resetPassword(request);
+            authService.resetPasswordWithToken(request);
             return ResponseEntity.ok(ApiResponse.ok(null, "Password reset successfully"));
         } catch (Exception e) {
             log.error("Password reset failed", e);
+            throw e;
+        }
+    }
+
+    @PostMapping("/change-password")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Change password", description = "Change current user password using old and new password")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid current password"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired token")
+    })
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        try {
+            authService.changePasswordForCurrentUser(request);
+            return ResponseEntity.ok(ApiResponse.ok(null, "Password changed successfully"));
+        } catch (Exception e) {
+            log.error("Password change failed", e);
             throw e;
         }
     }

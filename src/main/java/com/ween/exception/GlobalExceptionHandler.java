@@ -93,6 +93,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex, WebRequest request) {
+        log.warn("Invalid token: {}", ex.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+            .timestamp(LocalDateTime.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error("Bad Request")
+            .message(ex.getMessage())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .traceId(UUID.randomUUID().toString())
+            .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(QrTokenExpiredException.class)
     public ResponseEntity<ErrorResponse> handleQrTokenExpired(QrTokenExpiredException ex, WebRequest request) {
         log.warn("QR token expired: {}", ex.getMessage());
