@@ -162,6 +162,8 @@ This project includes a `render.yaml` blueprint for a Docker-based web service.
   - `RESET_PASSWORD_URL=https://ween.az/change-password`
 6. Deploy. Render will set `PORT` automatically; the app reads it from the environment.
 
+Important: if any of `DB_URL`, `DB_USERNAME`, or `DB_PASSWORD` are missing, the app will start and then fail during JPA initialization.
+
 ### MySQL Connection Example
 
 Use a real public MySQL endpoint, not localhost:
