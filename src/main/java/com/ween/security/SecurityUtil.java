@@ -14,8 +14,9 @@ public class SecurityUtil {
         if (authentication == null || !authentication.isAuthenticated()) {
             log.warn("User not authenticated");
             throw new RuntimeException("User not authenticated");
-
         }
+
+
         String userId = (String) authentication.getPrincipal();
         log.debug("Current user ID extracted: {}", userId);
         return userId;

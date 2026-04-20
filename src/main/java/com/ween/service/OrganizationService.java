@@ -29,8 +29,6 @@ public class OrganizationService {
 
     @Transactional
     public Organization createOrganization(CreateOrganizationRequest request, String ownerId) {
-        User owner = userRepository.findById(ownerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner not found: " + ownerId));
 
         Organization organization = Organization.builder()
                 .name(request.getName())
@@ -50,8 +48,13 @@ public class OrganizationService {
     }
 
     @Transactional
-    public Organization updateOrganization(String organizationId, String id, UpdateOrganizationRequest request) {
+    public Organization updateOrganization(String userId,String organizationId, UpdateOrganizationRequest request) {
         Organization organization = getOrganizationById(organizationId);
+
+        if (!organization.getOwnerId().equals(userId)) {
+            throw new RuntimeException("Only organization owner can update");
+        }
+
 
         if (request.getName() != null) {
             organization.setName(request.getName());

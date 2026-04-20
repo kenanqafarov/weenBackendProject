@@ -1,9 +1,11 @@
 package com.ween.controller;
 
+
 import com.ween.dto.request.CreateOrganizationRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
 import com.ween.dto.response.*;
 import com.ween.entity.Organization;
+import com.ween.security.SecurityUtil;
 import com.ween.service.EventService;
 import com.ween.service.OrganizationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Organizations", description = "Organization management endpoints")
 public class OrganizationController {
 
+    private final SecurityUtil securityUtil;
     private final OrganizationService organizationService;
     private final EventService eventService;
 
@@ -47,7 +50,7 @@ public class OrganizationController {
     public ResponseEntity<ApiResponse<Organization>> createOrganization(
             @Valid @RequestBody CreateOrganizationRequest request) {
         try {
-            String userId = getCurrentUserId();
+            String userId = securityUtil.getCurrentUserId();
             Organization response = organizationService.createOrganization(request, userId);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok(response, "Organization created successfully"));
@@ -88,7 +91,7 @@ public class OrganizationController {
             @Parameter(description = "Organization ID", required = true) @PathVariable String id,
             @Valid @RequestBody UpdateOrganizationRequest request) {
         try {
-            String userId = getCurrentUserId();
+            String userId = securityUtil.getCurrentUserId();
             Organization response = organizationService.updateOrganization(userId, id, request);
             return ResponseEntity.ok(ApiResponse.ok(response, "Organization updated successfully"));
         } catch (Exception e) {
