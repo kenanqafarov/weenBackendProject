@@ -6,6 +6,7 @@ import com.ween.dto.request.RegisterRequest;
 import com.ween.dto.request.RegisterOrganizationRequest;
 import com.ween.dto.request.ResetPasswordRequest;
 import com.ween.dto.response.AuthResponse;
+import com.ween.dto.response.OrganizationResponse;
 import com.ween.dto.response.UserResponse;
 import com.ween.entity.EmailVerificationToken;
 import com.ween.entity.PasswordResetToken;
@@ -69,7 +70,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         // Check if email already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail()) || organizationRepository.existsByEmail(request.getEmail())) {
             throw new AlreadyExistsException("Email already registered: " + request.getEmail());
         }
 
@@ -155,64 +156,54 @@ public class AuthService {
                 .build();
     }
 
+
     @Transactional
     public AuthResponse registerOrganization(RegisterOrganizationRequest request) {
-        // Extract email and username from request
         String orgEmail = request.getEmail();
         String orgUsername = request.getUsername();
 
-        // Check if email already exists
-        if (userRepository.existsByEmail(orgEmail)) {
+        // Check if email already exists in organizations
+        if (organizationRepository.existsByEmail(orgEmail)|| userRepository.existsByEmail(orgEmail)) {
             throw new AlreadyExistsException("Email already registered: " + orgEmail);
         }
 
-        // Check if username already exists
-        if (userRepository.existsByUsername(orgUsername)) {
+        // Check if username already exists in organizations
+        if (organizationRepository.existsByUsername(orgUsername)) {
             throw new AlreadyExistsException("Username already taken: " + orgUsername);
         }
 
-        // Create organization admin user account
-        User orgAdminUser = User.builder()
+        // Create organization directly (without creating user account)
+        Organization organization = Organization.builder()
                 .username(orgUsername)
                 .email(orgEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .fullName(request.getOrganizationName())
-                .role(UserRole.ORGANIZATION_ADMIN)
-                .referralCode(generateReferralCode())
-                .build();
-
-        User savedOrgAdminUser = userRepository.save(orgAdminUser);
-        log.info("Organization admin user created: {}", savedOrgAdminUser.getEmail());
-
-        // Create organization
-        Organization organization = Organization.builder()
-                .name(request.getOrganizationName())
+                .organizationName(request.getOrganizationName())
                 .description(request.getDescription())
-                .ownerId(savedOrgAdminUser.getId())
-                .isVerified(false)
+                .role(UserRole.ORGANIZATION_ADMIN)
                 .build();
 
-        organizationRepository.save(organization);
-        log.info("Organization created: {}", organization.getName());
+        Organization savedOrganization = organizationRepository.save(organization);
+        log.info("Organization registered successfully: {}", savedOrganization.getEmail());
 
         // Generate tokens for immediate login
-        String accessToken = jwtUtil.generateAccessToken(savedOrgAdminUser.getId(), savedOrgAdminUser.getEmail(),savedOrgAdminUser.getRole());
-        String refreshToken = jwtUtil.generateRefreshToken(savedOrgAdminUser.getId());
+        String accessToken = jwtUtil.generateAccessToken(savedOrganization.getId(), savedOrganization.getEmail(), UserRole.ORGANIZATION_ADMIN);
+        String refreshToken = jwtUtil.generateRefreshToken(savedOrganization.getId());
 
-        UserResponse userResponse = UserResponse.builder()
-                .id(savedOrgAdminUser.getId())
-                .username(savedOrgAdminUser.getUsername())
-                .email(savedOrgAdminUser.getEmail())
-                .fullName(savedOrgAdminUser.getFullName())
-                .role(savedOrgAdminUser.getRole())
-            .isEmailVerified(savedOrgAdminUser.getIsEmailVerified())
-                .weenCoinBalance(savedOrgAdminUser.getWeenCoinBalance())
+        // Create response using UserResponse (can be reused)
+        OrganizationResponse orgResponse = OrganizationResponse.builder()
+                .id(savedOrganization.getId())
+                .username(savedOrganization.getUsername())
+                .email(savedOrganization.getEmail())
+                .description(savedOrganization.getDescription())
+                .organizationName(savedOrganization.getOrganizationName())
+                .role(savedOrganization.getRole())
+                .isVerified(savedOrganization.getIsVerified())
                 .build();
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
-                .user(userResponse)
+                .organization(orgResponse)
                 .expiresIn(jwtUtil.getAccessTokenExpiration())
                 .build();
     }
@@ -225,7 +216,7 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(),user.getRole());
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         log.info("User logged in successfully: {}", user.getEmail());
@@ -248,18 +239,65 @@ public class AuthService {
                 .build();
     }
 
+    public AuthResponse loginOrganization(LoginRequest request) {
+        Organization organization = organizationRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.getPassword(), organization.getPasswordHash())) {
+            throw new UnauthorizedException("Invalid email or password");
+        }
+
+        String accessToken = jwtUtil.generateAccessToken(organization.getId(), organization.getEmail(), organization.getRole());
+        String refreshToken = jwtUtil.generateRefreshToken(organization.getId());
+
+        log.info("Organization logged in successfully: {}", organization.getEmail());
+
+        OrganizationResponse orgResponse = OrganizationResponse.builder()
+                .id(organization.getId())
+                .username(organization.getUsername())
+                .email(organization.getEmail())
+                .organizationName(organization.getOrganizationName())
+                .description(organization.getDescription())
+                .role(organization.getRole())
+                .isVerified(false)
+                .build();
+
+        return AuthResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .organization(orgResponse)
+                .expiresIn(jwtUtil.getAccessTokenExpiration())
+                .build();
+    }
+
     public String refreshToken(String refreshTokenStr) {
         try {
-            String userId = jwtUtil.extractUserId(refreshTokenStr);
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-            
-            return jwtUtil.generateAccessToken(user.getId(), user.getEmail(),user.getRole());
+            String accountId = jwtUtil.extractUserId(refreshTokenStr);
+
+            User user = userRepository.findById(accountId).orElse(null);
+
+            if (user != null) {
+                log.info("Refresh token used by User: {}", user.getEmail());
+                return jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
+            }
+
+            Organization organization = organizationRepository.findById(accountId).orElse(null);
+
+            if (organization != null) {
+                log.info("Refresh token used by Organization: {}", organization.getEmail());
+                return jwtUtil.generateAccessToken(organization.getId(), organization.getEmail(), UserRole.ORGANIZATION_ADMIN);
+            }
+
+            throw new ResourceNotFoundException("Account not found for the provided token");
+
+        } catch (ResourceNotFoundException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Failed to refresh token", e);
             throw new UnauthorizedException("Invalid refresh token");
         }
     }
+
 
     @Transactional
     public void initiatePasswordReset(String email) {
@@ -320,17 +358,32 @@ public class AuthService {
             throw new UnauthorizedException("Old password is required");
         }
 
-        String userId = securityUtil.getCurrentUserId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        String accountId = securityUtil.getCurrentUserId();
 
-        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
-            throw new UnauthorizedException("Old password is incorrect");
+        User user = userRepository.findById(accountId).orElse(null);
+        if (user != null) {
+            if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+                throw new UnauthorizedException("Old password is incorrect");
+            }
+            user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(user);
+            log.info("Password changed successfully for User: {}", user.getEmail());
+            return;
         }
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-        log.info("Password changed successfully for user: {}", user.getEmail());
+        Organization organization = organizationRepository.findById(accountId).orElse(null);
+        if (organization != null) {
+
+            if (!passwordEncoder.matches(oldPassword, organization.getPasswordHash())) {
+                throw new UnauthorizedException("Old password is incorrect");
+            }
+            organization.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            organizationRepository.save(organization);
+            log.info("Password changed successfully for Organization: {}", organization.getEmail());
+            return;
+        }
+
+        throw new ResourceNotFoundException("Account not found");
     }
 
     private String generateReferralCode() {

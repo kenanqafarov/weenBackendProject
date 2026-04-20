@@ -1,11 +1,26 @@
 package com.ween.controller;
 
-import com.ween.dto.request.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ween.dto.request.ChangePasswordRequest;
+import com.ween.dto.request.ForgotPasswordRequest;
+import com.ween.dto.request.LoginRequest;
+import com.ween.dto.request.RefreshTokenRequest;
+import com.ween.dto.request.RegisterOrganizationRequest;
+import com.ween.dto.request.RegisterRequest;
+import com.ween.dto.request.ResetPasswordRequest;
+import com.ween.dto.request.VerifyEmailRequest;
 import com.ween.dto.response.ApiResponse;
 import com.ween.dto.response.AuthResponse;
-import com.ween.entity.User;
-import com.ween.exception.InvalidTokenException;
 import com.ween.service.AuthService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,9 +31,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 
 @Slf4j
@@ -86,6 +98,23 @@ public class AuthController {
             return ResponseEntity.ok(ApiResponse.ok(response, "Login successful"));
         } catch (Exception e) {
             log.error("Login failed for email: {}", request.getEmail(), e);
+            throw e;
+        }
+    }
+
+    @PostMapping("/login/organization")
+    @Operation(summary = "Organization login", description = "Authenticate organization and receive access token")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid email or password", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    public ResponseEntity<ApiResponse<AuthResponse>> loginOrganization(@Valid @RequestBody LoginRequest request) {
+        try {
+            AuthResponse response = authService.loginOrganization(request);
+            return ResponseEntity.ok(ApiResponse.ok(response, "Organization login successful"));
+        } catch (Exception e) {
+            log.error("Organization login failed for email: {}", request.getEmail(), e);
             throw e;
         }
     }

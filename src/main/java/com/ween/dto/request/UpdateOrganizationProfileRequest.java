@@ -10,29 +10,21 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class RegisterOrganizationRequest {
+public class UpdateOrganizationProfileRequest {
 
     @NotBlank(message = "Organization name is required")
     @Size(min = 2, max = 200, message = "Organization name must be between 2 and 200 characters")
     private String organizationName;
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email should be valid")
-    private String email;
-
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    private String username;
-
     @NotBlank(message = "Organization description is required")
     private String description;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 255, message = "Password must be between 8 and 255 characters")
-    private String password;
-
     @Size(max = 500, message = "Logo URL cannot exceed 500 characters")
     private String logoUrl;
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email should be valid")
+    private String email;
 
     @Size(max = 300, message = "Website URL cannot exceed 300 characters")
     private String website;

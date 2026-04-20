@@ -82,7 +82,7 @@ public class AdminService {
         
         Page<Organization> organizations;
         if (search != null && !search.isBlank()) {
-            organizations = organizationRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+            organizations = organizationRepository.findByOrganizationNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
                     search, search, pageable);
         } else {
             organizations = organizationRepository.findAll(pageable);

@@ -20,9 +20,7 @@ public class CreateOrganizationRequest {
     private String description;
     
     private String logoUrl;
-    
-    @Email(message = "Contact email must be valid")
-    private String contactEmail;
-    
+
+
     private String website;
 }

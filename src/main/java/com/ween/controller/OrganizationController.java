@@ -1,7 +1,9 @@
+/*
 package com.ween.controller;
 
 
 import com.ween.dto.request.CreateOrganizationRequest;
+import com.ween.dto.request.UpdateOrganizationProfileRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
 import com.ween.dto.response.*;
 import com.ween.entity.Organization;
@@ -147,3 +149,4 @@ public class OrganizationController {
         return (String) authentication.getPrincipal();
     }
 }
+*/

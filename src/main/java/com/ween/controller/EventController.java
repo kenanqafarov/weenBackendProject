@@ -1,3 +1,4 @@
+/*
 package com.ween.controller;
 
 import com.ween.dto.request.CreateEventRequest;
@@ -246,3 +247,4 @@ public class EventController {
         return (String) authentication.getPrincipal();
     }
 }
+*/

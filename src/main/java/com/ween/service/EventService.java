@@ -1,3 +1,4 @@
+/*
 package com.ween.service;
 
 import com.ween.dto.request.CreateEventRequest;
@@ -306,3 +307,4 @@ public class EventService {
                 .build();
     }
 }
+*/

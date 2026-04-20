@@ -1,3 +1,4 @@
+/*
 package com.ween.service;
 
 import com.ween.dto.request.CreateOrganizationRequest;
@@ -123,3 +124,4 @@ public class OrganizationService {
         return null;
     }
 }
+*/
