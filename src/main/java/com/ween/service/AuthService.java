@@ -60,10 +60,10 @@ public class AuthService {
     private final CoinService coinService;
     private final com.ween.repository.ReferralRepository referralRepository;
 
-    @Value("${ween.frontend.verify-url:https://ween.az/verify}")
+    @Value("${ween.frontend.verify-url:http://localhost:5001/verify}")
     private String verifyEmailBaseUrl;
 
-    @Value("${ween.frontend.reset-password-url:https://ween.az/change-password}")
+    @Value("${ween.frontend.reset-password-url:http://localhost:5001/reset-password}")
     private String resetPasswordBaseUrl;
 
     @Transactional
@@ -390,6 +390,18 @@ public class AuthService {
         emailVerificationTokenRepository.save(verificationToken);
 
         log.info("Email verified successfully for user: {}", user.getEmail());
+    }
+
+    public void sendVerificationTokenForCurrentUser() {
+        String userId = securityUtil.getCurrentUserId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+            throw new AlreadyExistsException("Email is already verified");
+        }
+
+        createAndSendEmailVerification(user);
     }
 
     public void sendPasswordResetLink(@NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email) {

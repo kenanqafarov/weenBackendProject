@@ -8,6 +8,8 @@ import com.ween.exception.InvalidTokenException;
 import com.ween.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -18,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -32,9 +33,9 @@ public class AuthController {
     @PostMapping("/register")
     @Operation(summary = "Register new user", description = "Create a new user account with optional referral code")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "User registered successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "User already exists")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "User registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "User already exists", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @Valid @RequestBody RegisterRequest request,
@@ -56,9 +57,9 @@ public class AuthController {
     @PostMapping("/register/organization")
     @Operation(summary = "Register new organization", description = "Create a new organization account")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Organization registered successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Organization already exists")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Organization registered successfully", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "Organization already exists", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<AuthResponse>> registerOrganization(
             @Valid @RequestBody RegisterOrganizationRequest request) {
@@ -75,9 +76,9 @@ public class AuthController {
     @PostMapping("/login")
     @Operation(summary = "User login", description = "Authenticate user and receive access token")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid email or password")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = AuthResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid credentials", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid email or password", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -92,8 +93,8 @@ public class AuthController {
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token", description = "Use refresh token to get a new access token")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid refresh token")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Token refreshed successfully", content = @Content(schema = @Schema(implementation = String.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid refresh token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<String>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         try {
@@ -107,10 +108,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     @SecurityRequirement(name = "Bearer Authentication")
-    @Operation(summary = "User logout", description = "Invalidate the current access token")
+    @Operation(summary = "User logout", description = "Invalidate the current access token. Requires authentication.")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Bearer token required or invalid", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> logout() {
         try {
@@ -122,25 +123,16 @@ public class AuthController {
         }
     }
 
-    @RequestMapping(value = "/verify-email", method = {RequestMethod.GET, RequestMethod.POST})
-    @Operation(summary = "Verify email address", description = "Verify user email using verification token")
+    @GetMapping("/verify-email")
+    @Operation(summary = "Verify email with token (query parameter)", description = "Verify user email using verification token passed as query parameter")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
-    public ResponseEntity<ApiResponse<Void>> verifyEmail(
-            @RequestBody(required = false) VerifyEmailRequest request,
-            @RequestParam(value = "token", required = false) String tokenParam) {
+    public ResponseEntity<ApiResponse<Void>> verifyEmailGet(
+            @Parameter(description = "Email verification token", required = true)
+            @RequestParam(value = "token") String token) {
         try {
-            String token = Optional.ofNullable(request)
-                    .map(VerifyEmailRequest::getToken)
-                    .filter(value -> !value.isBlank())
-                    .orElse(tokenParam);
-
-            if (token == null || token.isBlank()) {
-                throw new InvalidTokenException("Verification token is required");
-            }
-
             authService.verifyEmail(token);
             return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
         } catch (Exception e) {
@@ -149,11 +141,62 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/forgot-password")
-    @Operation(summary = "Forgot password", description = "Request password reset link")
+    @PostMapping("/verify-email")
+    @Operation(summary = "Verify email with token (request body)", description = "Verify user email using verification token passed in request body")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset link sent"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid email")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    public ResponseEntity<ApiResponse<Void>> verifyEmailPost(
+            @Valid @RequestBody VerifyEmailRequest request) {
+        try {
+            authService.verifyEmail(request.getToken());
+            return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
+        } catch (Exception e) {
+            log.error("Email verification failed", e);
+            throw e;
+        }
+    }
+
+    @GetMapping("/verify-token")
+    @SecurityRequirement(name = "Bearer Authentication")
+    @Operation(summary = "Resend verification email", description = "Generate a new email verification token for current user and send it by email. Requires authentication.")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Verification email sent successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Email is already verified", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Bearer token required or invalid", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    public ResponseEntity<ApiResponse<Void>> generateVerifyToken() {
+        try {
+            authService.sendVerificationTokenForCurrentUser();
+            return ResponseEntity.ok(ApiResponse.ok(null, "Verification email sent successfully"));
+        } catch (Exception e) {
+            log.error("Generating verification token failed", e);
+            throw e;
+        }
+    }
+
+    @PostMapping("/verify-token")
+    @Operation(summary = "Verify email with token", description = "Complete email verification by submitting the verification token from email link")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired verification token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
+    })
+    public ResponseEntity<ApiResponse<Void>> verifyToken(@Valid @RequestBody VerifyEmailRequest request) {
+        try {
+            authService.verifyEmail(request.getToken());
+            return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
+        } catch (Exception e) {
+            log.error("Email token verification failed", e);
+            throw e;
+        }
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Request password reset", description = "Request password reset link to be sent to email")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset link sent successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid email", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
@@ -166,10 +209,10 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset password", description = "Reset user password using reset token")
+    @Operation(summary = "Reset password with token", description = "Reset user password using reset token from email")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
@@ -183,11 +226,11 @@ public class AuthController {
 
     @PostMapping("/change-password")
     @SecurityRequirement(name = "Bearer Authentication")
-    @Operation(summary = "Change password", description = "Change current user password using old and new password")
+    @Operation(summary = "Change current password", description = "Change current user password using old and new password. Requires authentication.")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid current password"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Invalid or expired token")
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid current password", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Bearer token required or invalid", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
     })
     public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         try {

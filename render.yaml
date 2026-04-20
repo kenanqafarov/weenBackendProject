@@ -22,6 +22,7 @@ services:
         value: YOUR_DB_PASSWORD
         sync: false
       - key: MAIL_HOST
+        value: smtp.gmail.com
         sync: false
       - key: MAIL_USERNAME
         sync: false

@@ -40,8 +40,8 @@ ween:
   mail:
     from: ${MAIL_FROM:weenorganization@gmail.com}
   frontend:
-    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5000/verify-email}
-    reset-password-url: ${RESET_PASSWORD_URL:http://localhost:5173/change-password}
+    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5001/verify}
+    reset-password-url: ${RESET_PASSWORD_URL:http://localhost:5001/reset-password}
   api-key: dev-api-key-test
   cors:
-    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://localhost:5173
+    allowed-origins: http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://localhost:5001,http://localhost:5173

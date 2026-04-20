@@ -63,11 +63,11 @@ ween:
   mail:
     from: ${MAIL_FROM:weenorganization@gmail.com}
   frontend:
-    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5000/verify-email}
-    reset-password-url: ${RESET_PASSWORD_URL:https://ween.az/change-password}
+    verify-url: ${VERIFY_EMAIL_URL:http://localhost:5001/verify}
+    reset-password-url: ${RESET_PASSWORD_URL:http://localhost:5001/reset-password}
   api-key: ${ORGANIZER_API_KEY:your-api-key-here}
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5000,http://localhost:5173,https://ween.az,https://api.ween.az}
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:3001,http://localhost:5000,http://localhost:5001,http://localhost:5173,https://ween.az,https://api.ween.az}
   app:
     name: Ween
 
