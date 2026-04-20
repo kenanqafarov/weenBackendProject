@@ -31,21 +31,21 @@ CREATE TABLE users (
     INDEX idx_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE organizations (
-    id CHAR(36) PRIMARY KEY,
-    name VARCHAR(200) NOT NULL,
-    description TEXT,
-    logo_url VARCHAR(500),
-    contact_email VARCHAR(150),
-    website VARCHAR(300),
-    subscription_plan ENUM('FREE','STARTER','PROFESSIONAL','ENTERPRISE') DEFAULT 'FREE',
-    owner_id CHAR(36) NOT NULL,
-    is_verified TINYINT(1) DEFAULT 0,
-    created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
-    updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    INDEX idx_owner_id (owner_id),
-    INDEX idx_subscription_plan (subscription_plan)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- CREATE TABLE organizations (
+--     id CHAR(36) PRIMARY KEY,
+--     name VARCHAR(200) NOT NULL,
+--     description TEXT,
+--     logo_url VARCHAR(500),
+--     contact_email VARCHAR(150),
+--     website VARCHAR(300),
+--     subscription_plan ENUM('FREE','STARTER','PROFESSIONAL','ENTERPRISE') DEFAULT 'FREE',
+--     owner_id CHAR(36) NOT NULL,
+--     is_verified TINYINT(1) DEFAULT 0,
+--     created_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+--     updated_at DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+--     INDEX idx_owner_id (owner_id),
+--     INDEX idx_subscription_plan (subscription_plan)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE events (
     id CHAR(36) PRIMARY KEY,
