@@ -38,7 +38,7 @@ public class OrganizationService {
                 .build();
 
         Organization saved = organizationRepository.save(organization);
-        log.info("Organization created: {} by user: {}", saved.getName(), ownerId);
+        log.info("Organization created: {} by user: {}", saved.getName(), saved.getOwnerId());
         return saved;
     }
 

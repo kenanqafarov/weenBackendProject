@@ -16,7 +16,6 @@ public class SecurityUtil {
             throw new RuntimeException("User not authenticated");
         }
 
-
         String userId = (String) authentication.getPrincipal();
         log.debug("Current user ID extracted: {}", userId);
         return userId;
