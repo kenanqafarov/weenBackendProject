@@ -2,13 +2,22 @@ package com.ween.service;
 
 import com.ween.dto.request.LoginRequest;
 import com.ween.dto.request.RegisterRequest;
+import com.ween.dto.request.ResetPasswordRequest;
+import com.ween.entity.Organization;
+import com.ween.entity.PasswordResetToken;
+import com.ween.entity.EmailVerificationToken;
 import com.ween.entity.User;
+import com.ween.repository.EmailVerificationTokenRepository;
+import com.ween.repository.OrganizationRepository;
+import com.ween.repository.PasswordResetTokenRepository;
+import com.ween.repository.ReferralRepository;
 import com.ween.enums.CoinReason;
 import com.ween.enums.UserRole;
 import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.UnauthorizedException;
 import com.ween.repository.UserRepository;
 import com.ween.security.JwtUtil;
+import com.ween.security.SecurityUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,6 +30,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -35,6 +45,18 @@ class AuthServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private OrganizationRepository organizationRepository;
+
+    @Mock
+    private EmailVerificationTokenRepository emailVerificationTokenRepository;
+
+    @Mock
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock
+    private SecurityUtil securityUtil;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
@@ -45,6 +67,9 @@ class AuthServiceTest {
 
     @Mock
     private CoinService coinService;
+
+    @Mock
+    private ReferralRepository referralRepository;
 
     @InjectMocks
     private AuthService authService;
@@ -406,5 +431,124 @@ class AuthServiceTest {
 
         // The expectation is that different referral codes are generated
         // This validates uniqueness at service level
+    }
+
+    @Test
+    @DisplayName("Should send password reset link to organization email")
+    void testForgotPasswordForOrganization() {
+        // Arrange
+        String organizationEmail = "org@example.com";
+        String organizationId = UUID.randomUUID().toString();
+        Organization organization = Organization.builder()
+                .id(organizationId)
+                .email(organizationEmail)
+                .organizationName("Test Organization")
+                .build();
+
+        when(userRepository.findByEmail(organizationEmail)).thenReturn(Optional.empty());
+        when(organizationRepository.findByEmail(organizationEmail)).thenReturn(Optional.of(organization));
+
+        // Act
+        authService.sendPasswordResetLink(organizationEmail);
+
+        // Assert
+        verify(passwordResetTokenRepository, times(1)).deleteByUserId(organizationId);
+        verify(emailService, times(1)).sendPasswordResetEmail(eq(organizationEmail), eq("Test Organization"), anyString());
+    }
+
+    @Test
+    @DisplayName("Should reset organization password with token")
+    void testResetPasswordForOrganization() {
+        // Arrange
+        String organizationId = UUID.randomUUID().toString();
+        String tokenValue = UUID.randomUUID().toString();
+        String newPassword = "NewSecurePassword123!";
+
+        Organization organization = Organization.builder()
+                .id(organizationId)
+                .email("org@example.com")
+                .passwordHash("oldHash")
+                .organizationName("Test Organization")
+                .build();
+
+        PasswordResetToken token = PasswordResetToken.builder()
+                .userId(organizationId)
+                .token(tokenValue)
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .isUsed(false)
+                .build();
+
+        ResetPasswordRequest request = new ResetPasswordRequest(tokenValue, newPassword);
+
+        when(passwordResetTokenRepository.findByTokenAndIsUsedFalse(tokenValue)).thenReturn(Optional.of(token));
+        when(userRepository.findById(organizationId)).thenReturn(Optional.empty());
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+        when(passwordEncoder.encode(newPassword)).thenReturn("hashedNewPassword");
+
+        // Act
+        authService.resetPasswordWithToken(request);
+
+        // Assert
+        verify(organizationRepository, times(1)).save(argThat(savedOrganization ->
+                "hashedNewPassword".equals(savedOrganization.getPasswordHash())
+        ));
+        verify(passwordResetTokenRepository, times(1)).save(argThat(savedToken -> Boolean.TRUE.equals(savedToken.getIsUsed())));
+    }
+
+    @Test
+    @DisplayName("Should resend verification email to organization")
+    void testResendVerificationEmailForOrganization() {
+        // Arrange
+        String organizationId = UUID.randomUUID().toString();
+        Organization organization = Organization.builder()
+                .id(organizationId)
+                .email("org@example.com")
+                .organizationName("Test Organization")
+                .isVerified(false)
+                .build();
+
+        when(securityUtil.getCurrentUserId()).thenReturn(organizationId);
+        when(userRepository.findById(organizationId)).thenReturn(Optional.empty());
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+
+        // Act
+        authService.sendVerificationTokenForCurrentUser();
+
+        // Assert
+        verify(emailVerificationTokenRepository, times(1)).deleteByUserId(organizationId);
+        verify(emailService, times(1)).sendVerificationEmail(eq("org@example.com"), eq("Test Organization"), anyString());
+    }
+
+    @Test
+    @DisplayName("Should verify organization email with token")
+    void testVerifyOrganizationEmailWithToken() {
+        // Arrange
+        String organizationId = UUID.randomUUID().toString();
+        String tokenValue = UUID.randomUUID().toString();
+
+        Organization organization = Organization.builder()
+                .id(organizationId)
+                .email("org@example.com")
+                .organizationName("Test Organization")
+                .isVerified(false)
+                .build();
+
+        EmailVerificationToken token = EmailVerificationToken.builder()
+                .userId(organizationId)
+                .token(tokenValue)
+                .expiresAt(LocalDateTime.now().plusHours(1))
+                .isUsed(false)
+                .build();
+
+        when(emailVerificationTokenRepository.findByTokenAndIsUsedFalse(tokenValue)).thenReturn(Optional.of(token));
+        when(userRepository.findById(organizationId)).thenReturn(Optional.empty());
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+
+        // Act
+        authService.verifyEmail(tokenValue);
+
+        // Assert
+        verify(organizationRepository, times(1)).save(argThat(savedOrganization -> Boolean.TRUE.equals(savedOrganization.getIsVerified())));
+        verify(emailVerificationTokenRepository, times(1)).save(argThat(savedToken -> Boolean.TRUE.equals(savedToken.getIsUsed())));
     }
 }

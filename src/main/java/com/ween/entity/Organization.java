@@ -53,5 +53,6 @@ public class Organization extends BaseEntity {
     private String verificationNote;
 
     public void setVerified(boolean b) {
+        this.isVerified = b;
     }
 }

@@ -301,16 +301,25 @@ public class AuthService {
 
     @Transactional
     public void initiatePasswordReset(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+        User user = userRepository.findByEmail(email).orElse(null);
+        Organization organization = null;
 
-        passwordResetTokenRepository.deleteByUserId(user.getId());
+        if (user == null) {
+            organization = organizationRepository.findByEmail(email)
+                    .orElseThrow(() -> new ResourceNotFoundException("Account not found with email: " + email));
+        }
+
+        String accountId = user != null ? user.getId() : organization.getId();
+        String displayName = user != null ? user.getFullName() : organization.getOrganizationName();
+        String accountEmail = user != null ? user.getEmail() : organization.getEmail();
+
+        passwordResetTokenRepository.deleteByUserId(accountId);
 
         String rawToken = UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
 
         PasswordResetToken token = PasswordResetToken.builder()
-            .userId(user.getId())
+            .userId(accountId)
             .token(rawToken)
             .expiresAt(expiresAt)
             .isUsed(false)
@@ -318,7 +327,7 @@ public class AuthService {
         passwordResetTokenRepository.save(token);
 
         String resetLink = resetPasswordBaseUrl + "?token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
-        emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetLink);
+        emailService.sendPasswordResetEmail(accountEmail, displayName, resetLink);
         log.info("Password reset email sent to: {}", email);
     }
 
@@ -337,18 +346,25 @@ public class AuthService {
             throw new InvalidTokenException("Reset token has expired");
         }
 
-        User user = userRepository.findById(passwordResetToken.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findById(passwordResetToken.getUserId()).orElse(null);
 
-        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
+        if (user != null) {
+            user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(user);
+            log.info("Password reset successfully via token for user: {}", user.getEmail());
+        } else {
+            Organization organization = organizationRepository.findById(passwordResetToken.getUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+            organization.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+            organizationRepository.save(organization);
+            log.info("Password reset successfully via token for organization: {}", organization.getEmail());
+        }
 
         // Invalidate token immediately after successful password reset.
         passwordResetToken.setIsUsed(true);
         passwordResetToken.setUsedAt(LocalDateTime.now());
         passwordResetTokenRepository.save(passwordResetToken);
-
-        log.info("Password reset successfully via token for user: {}", user.getEmail());
     }
 
     @Transactional
@@ -432,29 +448,47 @@ public class AuthService {
             throw new InvalidTokenException("Verification token has expired");
         }
 
-        User user = userRepository.findById(verificationToken.getUserId())
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findById(verificationToken.getUserId()).orElse(null);
 
-        user.setIsEmailVerified(true);
-        userRepository.save(user);
+        if (user != null) {
+            user.setIsEmailVerified(true);
+            userRepository.save(user);
+            log.info("Email verified successfully for user: {}", user.getEmail());
+        } else {
+            Organization organization = organizationRepository.findById(verificationToken.getUserId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+            organization.setVerified(true);
+            organizationRepository.save(organization);
+            log.info("Email verified successfully for organization: {}", organization.getEmail());
+        }
 
         verificationToken.setIsUsed(true);
         verificationToken.setVerifiedAt(LocalDateTime.now());
         emailVerificationTokenRepository.save(verificationToken);
-
-        log.info("Email verified successfully for user: {}", user.getEmail());
     }
 
     public void sendVerificationTokenForCurrentUser() {
         String userId = securityUtil.getCurrentUserId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = userRepository.findById(userId).orElse(null);
 
-        if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+        if (user != null) {
+            if (Boolean.TRUE.equals(user.getIsEmailVerified())) {
+                throw new AlreadyExistsException("Email is already verified");
+            }
+
+            createAndSendEmailVerification(user);
+            return;
+        }
+
+        Organization organization = organizationRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
+
+        if (Boolean.TRUE.equals(organization.getIsVerified())) {
             throw new AlreadyExistsException("Email is already verified");
         }
 
-        createAndSendEmailVerification(user);
+        createAndSendEmailVerification(organization);
     }
 
     public void sendPasswordResetLink(@NotBlank(message = "Email is required") @Email(message = "Email must be valid") String email) {
@@ -478,5 +512,24 @@ public class AuthService {
 
         String verificationLink = verifyEmailBaseUrl + "?token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
         emailService.sendVerificationEmail(user.getEmail(), user.getFullName(), verificationLink);
+    }
+
+    private void createAndSendEmailVerification(Organization organization) {
+        emailVerificationTokenRepository.deleteByUserId(organization.getId());
+
+        String rawToken = UUID.randomUUID() + UUID.randomUUID().toString().replace("-", "");
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+        EmailVerificationToken token = EmailVerificationToken.builder()
+                .userId(organization.getId())
+                .token(rawToken)
+                .expiresAt(expiresAt)
+                .isUsed(false)
+                .build();
+
+        emailVerificationTokenRepository.save(token);
+
+        String verificationLink = verifyEmailBaseUrl + "?token=" + URLEncoder.encode(rawToken, StandardCharsets.UTF_8);
+        emailService.sendVerificationEmail(organization.getEmail(), organization.getOrganizationName(), verificationLink);
     }
 }

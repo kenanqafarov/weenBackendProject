@@ -63,8 +63,6 @@ public class SecurityConfig {
                 .requestMatchers("POST", "/api/v1/auth/login").permitAll()
                     .requestMatchers("POST", "/api/v1/auth/login/organization").permitAll()
                 .requestMatchers("POST", "/api/v1/auth/refresh").permitAll()
-                .requestMatchers("GET", "/api/v1/auth/verify-email").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/verify-email").permitAll()
                 .requestMatchers("POST", "/api/v1/auth/forgot-password").permitAll()
                 .requestMatchers("POST", "/api/v1/auth/reset-password").permitAll()
                 .requestMatchers("POST", "/api/v1/auth/change-password").authenticated()

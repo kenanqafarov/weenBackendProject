@@ -152,41 +152,6 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/verify-email")
-    @Operation(summary = "Verify email with token (query parameter)", description = "Verify user email using verification token passed as query parameter")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
-    })
-    public ResponseEntity<ApiResponse<Void>> verifyEmailGet(
-            @Parameter(description = "Email verification token", required = true)
-            @RequestParam(value = "token") String token) {
-        try {
-            authService.verifyEmail(token);
-            return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
-        } catch (Exception e) {
-            log.error("Email verification failed", e);
-            throw e;
-        }
-    }
-
-    @PostMapping("/verify-email")
-    @Operation(summary = "Verify email with token (request body)", description = "Verify user email using verification token passed in request body")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Email verified successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
-    })
-    public ResponseEntity<ApiResponse<Void>> verifyEmailPost(
-            @Valid @RequestBody VerifyEmailRequest request) {
-        try {
-            authService.verifyEmail(request.getToken());
-            return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
-        } catch (Exception e) {
-            log.error("Email verification failed", e);
-            throw e;
-        }
-    }
-
     @GetMapping("/verify-token")
     @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Resend verification email", description = "Generate a new email verification token for current user and send it by email. Requires authentication.")
@@ -238,7 +203,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    @Operation(summary = "Reset password with token", description = "Reset user password using reset token from email")
+    @Operation(summary = "Reset password with token", description = "Reset account password using reset token from email")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password reset successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid or expired token", content = @Content(schema = @Schema(implementation = ApiResponse.class)))
