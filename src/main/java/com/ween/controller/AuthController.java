@@ -136,7 +136,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "User logout", description = "Invalidate the current access token. Requires authentication.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Logout successful", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
@@ -188,7 +188,7 @@ public class AuthController {
     }
 
     @GetMapping("/verify-token")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Resend verification email", description = "Generate a new email verification token for current user and send it by email. Requires authentication.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Verification email sent successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
@@ -254,7 +254,7 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @Operation(summary = "Change current password", description = "Change current user password using old and new password. Requires authentication.")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Password changed successfully", content = @Content(schema = @Schema(implementation = ApiResponse.class))),
