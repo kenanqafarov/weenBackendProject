@@ -1,4 +1,3 @@
-/*
 package com.ween.service;
 
 import com.ween.dto.request.CreateEventRequest;
@@ -17,11 +16,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -141,11 +144,16 @@ public class EventService {
     }
 
     @Transactional
-    public void cancelEvent(String eventId, String id) {
+    public void cancelEvent(String eventId, String userId) {
         Event event = getEventById(eventId);
-        event.setStatus(EventStatus.CANCELLED);
-        eventRepository.save(event);
-        log.info("Event cancelled: {}", eventId);
+
+        if (!event.getOrganizationId().equals(userId)) {
+            throw new AccessDeniedException("Only the event owner can delete this event");
+        }
+
+        registrationService.cancelAllRegistrationsForEvent(eventId);
+        eventRepository.delete(event);
+        log.info("Event deleted: {} by owner: {}", eventId, userId);
     }
 
     @Transactional
@@ -240,32 +248,57 @@ public class EventService {
     }
 
     public Page<EventResponse> listEvents(EventCategory category, String city, LocalDateTime dateFrom, LocalDateTime dateTo, String search, String organizationId, String sort, Pageable pageable) {
-        Page<Event> events = eventRepository.findAll(pageable);
-        
+        Pageable safePageable = buildSafePageable(pageable, sort);
+        Page<Event> events = eventRepository.findAll(safePageable);
+
         var eventList = events.getContent().stream()
                 .filter(e -> category == null || category.equals(e.getCategory()))
                 .filter(e -> city == null || city.isEmpty() || city.equalsIgnoreCase(e.getCity()))
                 .filter(e -> dateFrom == null || (e.getStartDate() != null && e.getStartDate().isAfter(dateFrom)))
                 .filter(e -> dateTo == null || (e.getEndDate() != null && e.getEndDate().isBefore(dateTo)))
-                .filter(e -> search == null || search.isEmpty() || 
+                .filter(e -> search == null || search.isEmpty() ||
                         e.getTitle().toLowerCase().contains(search.toLowerCase()) ||
                         e.getDescription().toLowerCase().contains(search.toLowerCase()))
                 .filter(e -> organizationId == null || organizationId.isEmpty() || organizationId.equals(e.getOrganizationId()))
-                .filter(e -> EventStatus.PUBLISHED.equals(e.getStatus()))
                 .map(event -> {
                     EventResponse response = eventMapper.toEventResponse(event);
                     response.setCurrentRegistrations((int) registrationService.getEventRegistrationCount(event.getId()));
                     try {
                         Organization org = organizationService.getOrganizationById(event.getOrganizationId());
-                        response.setOrganizationName(org.getName());
+                        response.setOrganizationName(org.getOrganizationName());
                     } catch (Exception e) {
                         log.warn("Organization not found for event: {}", event.getId());
                     }
                     return response;
                 })
                 .toList();
-        
-        return new PageImpl<>(eventList, pageable, eventList.size());
+
+        return new PageImpl<>(eventList, safePageable, eventList.size());
+    }
+
+    private Pageable buildSafePageable(Pageable pageable, String sortField) {
+        String normalizedSort = (sortField == null || sortField.isBlank()) ? "createdAt" : sortField.trim();
+
+        Set<String> allowedSortFields = Set.of(
+                "createdAt",
+                "updatedAt",
+                "startDate",
+                "endDate",
+                "registrationDeadline",
+                "title",
+                "city",
+                "status",
+                "category"
+        );
+
+        if (!allowedSortFields.contains(normalizedSort)) {
+            normalizedSort = "createdAt";
+        }
+
+        int page = pageable == null ? 0 : Math.max(pageable.getPageNumber(), 0);
+        int size = pageable == null ? 20 : Math.max(pageable.getPageSize(), 1);
+
+        return PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, normalizedSort));
     }
 
     public EventDetailResponse getEventDetail(String id) {
@@ -273,14 +306,14 @@ public class EventService {
         EventDetailResponse response = eventMapper.toEventDetailResponse(event);
         response.setCurrentRegistrations((int) registrationService.getEventRegistrationCount(id));
         response.setAttendeeCount((int) registrationService.getEventJoinedCount(id));
-        
+
         try {
             Organization org = organizationService.getOrganizationById(event.getOrganizationId());
-            response.setOrganizationName(org.getName());
+            response.setOrganizationName(org.getOrganizationName());
         } catch (Exception e) {
             log.warn("Organization not found for event: {}", event.getId());
         }
-        
+
         return response;
     }
 
@@ -288,15 +321,15 @@ public class EventService {
         Event event = getEventById(id);
         long totalRegistered = registrationService.getEventRegistrationCount(id);
         long totalAttended = registrationService.getEventJoinedCount(id);
-        
+
         long registrationRate = event.getMaxParticipants() != null && event.getMaxParticipants() > 0
                 ? (totalRegistered * 100) / event.getMaxParticipants()
                 : 0;
-        
+
         long attendanceRate = totalRegistered > 0
                 ? (totalAttended * 100) / totalRegistered
                 : 0;
-        
+
         return EventStatsResponse.builder()
                 .eventId(event.getId())
                 .eventTitle(event.getTitle())
@@ -307,4 +340,3 @@ public class EventService {
                 .build();
     }
 }
-*/

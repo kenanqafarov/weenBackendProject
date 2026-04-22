@@ -4,7 +4,7 @@ import com.ween.dto.request.UpdateProfileRequest;
 import com.ween.dto.response.*;
 import com.ween.entity.Certificate;
 import com.ween.entity.User;
-import com.ween.exception.ResourceNotFoundException;
+import com.ween.exception.UnauthorizedException;
 import com.ween.mapper.CertificateMapper;
 import com.ween.mapper.UserMapper;
 import com.ween.service.CertificateService;
@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -44,7 +45,7 @@ public class UserController {
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile", description = "Retrieve authenticated user's profile information")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -62,7 +63,7 @@ public class UserController {
 
     @PutMapping("/me")
     @Operation(summary = "Update current user profile", description = "Update authenticated user's profile information")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Profile updated successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -100,7 +101,7 @@ public class UserController {
 
     @GetMapping("/me/events")
     @Operation(summary = "Get user's attended events", description = "Retrieve paginated list of events user participated in")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Events retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -119,7 +120,7 @@ public class UserController {
 
     @GetMapping("/me/certificates")
     @Operation(summary = "Get user's certificates", description = "Retrieve paginated list of user's earned certificates")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Certificates retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -138,7 +139,7 @@ public class UserController {
 
     @GetMapping("/me/coins")
     @Operation(summary = "Get user's coin information", description = "Retrieve user's coin balance and transaction history")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Coin information retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -156,8 +157,11 @@ public class UserController {
 
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new ResourceNotFoundException("User not authenticated");
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken
+                || "anonymousUser".equals(authentication.getPrincipal())) {
+            throw new UnauthorizedException("User not authenticated");
         }
         return (String) authentication.getPrincipal();
     }

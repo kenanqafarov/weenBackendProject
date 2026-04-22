@@ -128,7 +128,8 @@ public class UserService {
 
 
     public PublicProfileResponse getPublicProfile(String username) {
-        return null;
+        User user = getUserByUsername(username);
+        return userMapper.toPublicProfileResponse(user);
     }
 
     public UserResponse updateProfilePhoto(String userId, String photoUrl) {

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -31,13 +32,13 @@ public class NotificationController {
 
     @GetMapping
     @Operation(summary = "Get notifications", description = "Retrieve pageable list of user's notifications")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     public ResponseEntity<ApiResponse<Page<NotificationResponse>>> getNotifications(
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         try {
             String userId = getCurrentUserId();
             Page<NotificationResponse> response = notificationService.getUserNotificationsMapped(userId, pageable);
@@ -51,7 +52,7 @@ public class NotificationController {
     @PutMapping("/{id}/read")
     @Transactional
     @Operation(summary = "Mark notification as read", description = "Mark a specific notification as read")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Notification marked as read"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -73,7 +74,7 @@ public class NotificationController {
     @PutMapping("/read-all")
     @Transactional
     @Operation(summary = "Mark all notifications as read", description = "Mark all user's notifications as read")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "All notifications marked as read"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")

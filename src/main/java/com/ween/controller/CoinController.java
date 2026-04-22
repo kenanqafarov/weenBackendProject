@@ -36,7 +36,7 @@ public class CoinController {
 
     @GetMapping("/balance")
     @Operation(summary = "Get coin balance", description = "Get current user's coin balance")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Balance retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
@@ -54,7 +54,7 @@ public class CoinController {
 
     @GetMapping("/transactions")
     @Operation(summary = "Get coin transactions", description = "Get pageable list of user's coin transactions")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Transactions retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")

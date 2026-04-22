@@ -17,6 +17,7 @@ import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.InvalidTokenException;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.exception.UnauthorizedException;
+import com.ween.enums.NotificationType;
 import com.ween.repository.EmailVerificationTokenRepository;
 import com.ween.repository.PasswordResetTokenRepository;
 import com.ween.repository.UserRepository;
@@ -59,6 +60,8 @@ public class AuthService {
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final CoinService coinService;
+    private final QrService qrService;
+    private final NotificationService notificationService;
     private final com.ween.repository.ReferralRepository referralRepository;
 
     @Value("${ween.frontend.verify-url:http://localhost:5001/verify}")
@@ -99,6 +102,24 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
         log.info("User registered successfully: {}", savedUser.getEmail());
+
+        String qrToken = null;
+        try {
+            qrToken = qrService.generateQrToken(savedUser.getId());
+        } catch (Exception e) {
+            log.warn("Failed to generate QR token during registration for user: {}", savedUser.getId(), e);
+        }
+
+        try {
+            notificationService.createNotification(
+                    savedUser.getId(),
+                    NotificationType.SYSTEM,
+                    "Welcome to Ween",
+                    "Your account has been created successfully. Your QR token is ready for event check-ins."
+            );
+        } catch (Exception e) {
+            log.warn("Failed to create welcome notification for user: {}", savedUser.getId(), e);
+        }
 
         try {
             createAndSendEmailVerification(savedUser);
@@ -146,6 +167,7 @@ public class AuthService {
                 .role(savedUser.getRole())
             .isEmailVerified(savedUser.getIsEmailVerified())
                 .weenCoinBalance(savedUser.getWeenCoinBalance())
+                .qrToken(qrToken)
                 .build();
 
         return AuthResponse.builder()
@@ -185,6 +207,17 @@ public class AuthService {
         Organization savedOrganization = organizationRepository.save(organization);
         log.info("Organization registered successfully: {}", savedOrganization.getEmail());
 
+        try {
+            notificationService.createNotification(
+                    savedOrganization.getId(),
+                    NotificationType.SYSTEM,
+                    "Organization account created",
+                    "Your organization account is ready and can now create and manage events."
+            );
+        } catch (Exception e) {
+            log.warn("Failed to create welcome notification for organization: {}", savedOrganization.getId(), e);
+        }
+
         // Generate tokens for immediate login
         String accessToken = jwtUtil.generateAccessToken(savedOrganization.getId(), savedOrganization.getEmail(), UserRole.ORGANIZATION_ADMIN);
         String refreshToken = jwtUtil.generateRefreshToken(savedOrganization.getId());
@@ -219,6 +252,15 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
+        String qrToken = null;
+        try {
+            qrToken = qrService.isQrTokenValid(user.getId())
+                    ? qrService.getQrToken(user.getId())
+                    : qrService.generateQrToken(user.getId());
+        } catch (Exception e) {
+            log.warn("Failed to resolve QR token during login for user: {}", user.getId(), e);
+        }
+
         log.info("User logged in successfully: {}", user.getEmail());
 
         UserResponse userResponse = UserResponse.builder()
@@ -229,6 +271,7 @@ public class AuthService {
                 .role(user.getRole())
             .isEmailVerified(user.getIsEmailVerified())
                 .weenCoinBalance(user.getWeenCoinBalance())
+                .qrToken(qrToken)
                 .build();
 
         return AuthResponse.builder()

@@ -1,5 +1,6 @@
 package com.ween.security;
 
+import com.ween.enums.UserRole;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,26 +33,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
                 String token = authorizationHeader.substring(7);
-                
-                if (jwtUtil.validateToken(token) && !jwtUtil.isTokenExpired(token)) {
-                    String jti = jwtUtil.extractJti(token);
+                log.info("JWT token found in Authorization header");
+
+                boolean isValid = jwtUtil.validateToken(token);
+                boolean isNotExpired = !jwtUtil.isTokenExpired(token);
+                log.info("Token validation: valid={}, notExpired={}", isValid, isNotExpired);
+
+                if (isValid && isNotExpired) {
+                    String tokenType = jwtUtil.extractTokenType(token);
+                    log.info("Token type: {}", tokenType);
                     
-                    // Redis token blacklist check (DISABLED - Redis is disabled)
-                    // if (!redisTokenService.isTokenBlacklisted(jti)) {
-                        String userId = jwtUtil.extractUserId(token);
-                        
-                        UsernamePasswordAuthenticationToken authentication = 
+                    if (!"access".equals(tokenType)) {
+                        log.warn("Token type is not 'access', skipping authentication");
+                        filterChain.doFilter(request, response);
+                        return;
+                    }
+
+                    String userId = jwtUtil.extractUserId(token);
+                    UserRole role = jwtUtil.extractRole(token);
+                    log.info("Extracted userId: {}, role: {}", userId, role);
+
+                    if (role != null) {
+                        UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                 userId,
                                 null,
-                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                                Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.name()))
                             );
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                         SecurityContextHolder.getContext().setAuthentication(authentication);
-                        
-                        log.debug("JWT token validated for user: {}", userId);
-                    // }
+                        log.info("JWT token validated and authenticated for user: {} with role: {}", userId, role);
+                    } else {
+                        log.warn("Role is null, authentication not set");
+                    }
+                } else {
+                    log.warn("Token validation failed or token expired");
                 }
+            } else {
+                log.debug("No Bearer token in Authorization header");
             }
         } catch (Exception ex) {
             log.error("JWT filter error", ex);

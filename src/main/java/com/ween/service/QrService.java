@@ -2,24 +2,27 @@ package com.ween.service;
 
 import com.ween.dto.response.CheckinResponse;
 import com.ween.dto.response.QrResponse;
+import com.ween.entity.Event;
 import com.ween.entity.QrToken;
 import com.ween.entity.User;
 import com.ween.exception.QrTokenExpiredException;
 import com.ween.exception.QrTokenInvalidException;
 import com.ween.exception.ResourceNotFoundException;
+import com.ween.repository.EventRepository;
 import com.ween.repository.QrTokenRepository;
 import com.ween.repository.UserRepository;
 import com.ween.security.AesUtil;
 import com.ween.security.JwtUtil;
+import com.ween.security.SecurityUtil;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -28,9 +31,11 @@ import java.util.UUID;
 public class QrService {
 
     private final QrTokenRepository qrTokenRepository;
+    private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final AesUtil aesUtil;
+    private final SecurityUtil securityUtil;
     private final RegistrationService registrationService;
 
     @Value("${ween.qr.token-validity-hours:24}")
@@ -38,8 +43,8 @@ public class QrService {
 
     @Transactional
     public String generateQrToken(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
+        userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
         // Revoke existing token if any
         qrTokenRepository.findByUserIdAndIsRevokedFalse(userId).ifPresent(qrToken -> {
@@ -66,7 +71,7 @@ public class QrService {
                 .isRevoked(false)
                 .build();
 
-        QrToken saved = qrTokenRepository.save(qrToken);
+        qrTokenRepository.save(qrToken);
         log.info("QR token generated for user: {}", userId);
         return encryptedToken;
     }
@@ -176,7 +181,30 @@ public class QrService {
     }
 
     public CheckinResponse checkinParticipant(@NotBlank(message = "Event ID is required") String eventId, @NotBlank(message = "QR token is required") String qrToken) {
-        return null;
+        Event event = eventRepository.findById(eventId)
+            .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + eventId));
+
+        String currentUserId = securityUtil.getCurrentUserId();
+        if (!event.getOrganizationId().equals(currentUserId)) {
+            throw new AccessDeniedException("Only the event owner can perform check-in");
+        }
+
+        String participantUserId = validateAndDecryptQrToken(qrToken);
+        User participant = userRepository.findById(participantUserId)
+            .orElseThrow(() -> new ResourceNotFoundException("Participant not found: " + participantUserId));
+
+        registrationService.markUserAsJoined(eventId, participantUserId);
+
+        String participantName = participant.getFullName() != null && !participant.getFullName().isBlank()
+            ? participant.getFullName()
+            : participant.getUsername();
+
+        return CheckinResponse.builder()
+            .status("CHECKED_IN")
+            .participantName(participantName)
+            .participantPhoto(participant.getProfilePhotoUrl())
+            .message("Check-in successful")
+            .build();
     }
 
     public Object getLiveEventStats(String id) {

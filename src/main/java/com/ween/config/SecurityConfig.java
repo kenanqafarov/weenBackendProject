@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -58,54 +59,52 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Auth endpoints - public register/login/refresh, secured logout
-                .requestMatchers("POST", "/api/v1/auth/register").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/register/organization").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/login").permitAll()
-                    .requestMatchers("POST", "/api/v1/auth/login/organization").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/refresh").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/forgot-password").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/reset-password").permitAll()
-                .requestMatchers("POST", "/api/v1/auth/change-password").authenticated()
-                .requestMatchers("POST", "/api/v1/auth/logout").authenticated()
-                
-                // Events - public read, requires auth for write
-                .requestMatchers("GET", "/api/v1/events").permitAll()
-                .requestMatchers("GET", "/api/v1/events/**").permitAll()
-                .requestMatchers("POST", "/api/v1/events").hasRole("ORGANIZER")
-                .requestMatchers("PUT", "/api/v1/events/**").hasRole("ORGANIZER")
-                .requestMatchers("DELETE", "/api/v1/events/**").hasAnyRole("ORGANIZER", "ADMIN")
-                
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register/organization").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login/organization").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/forgot-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/reset-password").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/change-password").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
+
                 // Event registration
-                .requestMatchers("POST", "/api/v1/events/*/register").hasRole("VOLUNTEER")
-                .requestMatchers("DELETE", "/api/v1/events/*/register").hasRole("VOLUNTEER")
-                .requestMatchers("GET", "/api/v1/events/*/participants").hasRole("ORGANIZER")
-                .requestMatchers("GET", "/api/v1/events/*/stats").hasRole("ORGANIZER")
-                
-                // QR - public verify, API key for checkin
-                .requestMatchers("GET", "/api/v1/qr/my-qr").authenticated()
-                .requestMatchers("POST", "/api/v1/qr/checkin").hasRole("API_KEY")
-                .requestMatchers("GET", "/api/v1/qr/events/*/live").hasRole("ORGANIZER")
-                
+                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/register").hasRole("VOLUNTEER")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/events/*/register").hasRole("VOLUNTEER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/participants").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/stats").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+
+                // Events - public read, requires auth for write
+                .requestMatchers(HttpMethod.GET, "/api/v1/events").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/events").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/events/**").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/events/**").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN", "ADMIN")
+
+                // QR check-in - authenticated organizer flow
+                .requestMatchers(HttpMethod.POST, "/api/v1/qr/checkin").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+
                 // Certificates - public verify, requires auth for download
-                .requestMatchers("GET", "/api/v1/certificates/verify/**").permitAll()
-                .requestMatchers("POST", "/api/v1/certificates/generate/**").hasRole("ORGANIZER")
-                .requestMatchers("GET", "/api/v1/certificates/**").authenticated()
-                .requestMatchers("GET", "/api/v1/certificates/my").authenticated()
-                
+                .requestMatchers(HttpMethod.GET, "/api/v1/certificates/verify/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/certificates/generate/**").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/certificates/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/certificates/my").authenticated()
+
                 // Coins & Leaderboard - requires auth
                 .requestMatchers("/api/v1/coins/**").authenticated()
-                
+
                 // Users
-                .requestMatchers("GET", "/api/v1/users/@*").permitAll()
-                .requestMatchers("GET", "/api/v1/users/me").authenticated()
-                .requestMatchers("PUT", "/api/v1/users/me").authenticated()
-                .requestMatchers("POST", "/api/v1/users/me/profile-photo").authenticated()
-                .requestMatchers("GET", "/api/v1/users/me/**").authenticated()
-                
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/@*").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/users/me/profile-photo").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/users/me/**").authenticated()
+
                 // Organizations
-                .requestMatchers("GET", "/api/v1/organizations/**").permitAll()
-                .requestMatchers("POST", "/api/v1/organizations").hasRole("ORGANIZER")
-                .requestMatchers("PUT", "/api/v1/organizations/**").hasRole("ORGANIZER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/organizations/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/organizations").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/organizations/**").hasAnyRole("ORGANIZER", "ORGANIZATION_ADMIN")
                 
                 // Notifications
                 .requestMatchers("/api/v1/notifications/**").authenticated()

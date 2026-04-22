@@ -1,10 +1,10 @@
-/*
 package com.ween.service;
 
 import com.ween.dto.request.CreateOrganizationRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
 import com.ween.entity.Organization;
 import com.ween.entity.User;
+import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.OrganizationMapper;
 import com.ween.repository.EventRepository;
@@ -30,16 +30,29 @@ public class OrganizationService {
 
     @Transactional
     public Organization createOrganization(CreateOrganizationRequest request, String ownerId) {
+        User owner = userRepository.findById(ownerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + ownerId));
+
+        if (organizationRepository.existsByEmail(owner.getEmail())) {
+            throw new AlreadyExistsException("Organization already exists for email: " + owner.getEmail());
+        }
+
+        if (organizationRepository.existsByUsername(owner.getUsername())) {
+            throw new AlreadyExistsException("Organization already exists for username: " + owner.getUsername());
+        }
 
         Organization organization = Organization.builder()
-                .name(request.getName())
+                .username(owner.getUsername())
+                .email(owner.getEmail())
+                .passwordHash(owner.getPasswordHash())
+                .organizationName(request.getName())
                 .description(request.getDescription())
-                .contactEmail(request.getContactEmail())
-                .ownerId(ownerId)
+                .logoUrl(request.getLogoUrl())
+                .website(request.getWebsite())
                 .build();
 
         Organization saved = organizationRepository.save(organization);
-        log.info("Organization created: {} by user: {}", saved.getName(), saved.getOwnerId());
+        log.info("Organization created: {} by user: {}", saved.getOrganizationName(), ownerId);
         return saved;
     }
 
@@ -52,13 +65,13 @@ public class OrganizationService {
     public Organization updateOrganization(String userId,String organizationId, UpdateOrganizationRequest request) {
         Organization organization = getOrganizationById(organizationId);
 
-        if (!organization.getOwnerId().equals(userId)) {
+        if (!organization.getId().equals(userId)) {
             throw new RuntimeException("Only organization owner can update");
         }
 
 
         if (request.getName() != null) {
-            organization.setName(request.getName());
+            organization.setOrganizationName(request.getName());
         }
 
         if (request.getDescription() != null) {
@@ -66,7 +79,15 @@ public class OrganizationService {
         }
 
         if (request.getContactEmail() != null) {
-            organization.setContactEmail(request.getContactEmail());
+            organization.setEmail(request.getContactEmail());
+        }
+
+        if (request.getLogoUrl() != null) {
+            organization.setLogoUrl(request.getLogoUrl());
+        }
+
+        if (request.getWebsite() != null) {
+            organization.setWebsite(request.getWebsite());
         }
 
         Organization updated = organizationRepository.save(organization);
@@ -104,24 +125,15 @@ public class OrganizationService {
 
     @Transactional
     public void transferOwnership(String organizationId, String newOwnerId) {
-        Organization organization = getOrganizationById(organizationId);
-        User newOwner = userRepository.findById(newOwnerId)
-                .orElseThrow(() -> new ResourceNotFoundException("New owner not found: " + newOwnerId));
-
-        organization.setOwnerId(newOwnerId);
-        organizationRepository.save(organization);
-        log.info("Organization ownership transferred to {}: {}", newOwnerId, organizationId);
+        throw new UnsupportedOperationException("Ownership transfer is not supported for organization accounts");
     }
 
     public Organization getOrganizationByOwner(String ownerId) {
-        return organizationRepository.findAll().stream()
-                .filter(org -> org.getOwnerId().equals(ownerId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Organization not found for owner: " + ownerId));
+        return organizationRepository.findById(ownerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Organization not found for owner: " + ownerId));
     }
 
     public Object getOrganizationAnalytics(String userId, String id) {
         return null;
     }
 }
-*/

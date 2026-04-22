@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -85,8 +86,13 @@ public class NotificationService {
         return new PageImpl<>(mappedNotifications, pageable, notifications.getTotalElements());
     }
 
-    public Notification markAsRead(String notificationId, String id) {
+    public Notification markAsRead(String userId, String notificationId) {
         Notification notification = getNotificationById(notificationId);
+
+        if (!notification.getUserId().equals(userId)) {
+            throw new AccessDeniedException("Notification does not belong to user");
+        }
+
         notification.setIsRead(true);
         Notification updated = notificationRepository.save(notification);
         log.info("Notification marked as read: {}", notificationId);
