@@ -179,7 +179,6 @@ public class LeaderboardService {
 
         log.info("Leaderboard recalculated with {} entries", sortedEntries.size());
     }
-// 
     private int calculateUserScoreForPeriod(String userId, LeaderboardPeriod period) {
         LocalDateTime startDate = calculatePeriodStartDate(period);
         LocalDateTime endDate = LocalDateTime.now();
