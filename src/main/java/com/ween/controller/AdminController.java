@@ -31,7 +31,7 @@ public class AdminController {
 
     @GetMapping("/users")
     @Operation(summary = "Get all users", description = "Retrieve pageable list of all platform users (ADMIN only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Users retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -52,7 +52,7 @@ public class AdminController {
     @PutMapping("/users/{id}/ban")
     @Transactional
     @Operation(summary = "Ban/unban user", description = "Ban or unban a user account (ADMIN only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User ban status updated"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -75,7 +75,7 @@ public class AdminController {
 
     @GetMapping("/organizations")
     @Operation(summary = "Get all organizations", description = "Retrieve list of all organizations on platform (ADMIN only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organizations retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -96,7 +96,7 @@ public class AdminController {
     @PutMapping("/organizations/{id}/verify")
     @Transactional
     @Operation(summary = "Verify organization", description = "Verify or revoke verification for an organization (ADMIN only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organization verification status updated"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -119,7 +119,7 @@ public class AdminController {
 
     @GetMapping("/stats")
     @Operation(summary = "Get platform statistics", description = "Get comprehensive platform statistics and metrics (ADMIN only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Statistics retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),

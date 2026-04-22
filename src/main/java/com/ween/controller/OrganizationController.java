@@ -42,7 +42,7 @@ public class OrganizationController {
     @PostMapping
     @Transactional
     @Operation(summary = "Create organization", description = "Create a new organization (ORGANIZER only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Organization created successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
@@ -82,7 +82,7 @@ public class OrganizationController {
     @PutMapping("/{id}")
     @Transactional
     @Operation(summary = "Update organization", description = "Update organization details (owner only)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organization updated successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -122,7 +122,7 @@ public class OrganizationController {
 
     @GetMapping("/{id}/analytics")
     @Operation(summary = "Get organization analytics", description = "Get analytics dashboard for organization")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Analytics retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),

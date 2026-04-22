@@ -35,7 +35,7 @@ public class CertificateController {
     @PostMapping("/generate/{eventId}")
     @Transactional
     @Operation(summary = "Generate certificates", description = "Batch generate certificates for event participants (ORGANIZER only, async)")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "202", description = "Certificate generation started"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -74,7 +74,7 @@ public class CertificateController {
 
     @GetMapping("/{id}/download")
     @Operation(summary = "Download certificate PDF", description = "Download certificate as PDF file")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "PDF downloaded successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
@@ -98,7 +98,7 @@ public class CertificateController {
 
     @GetMapping("/my")
     @Operation(summary = "Get my certificates", description = "Retrieve list of user's earned certificates")
-    @SecurityRequirement(name = "Bearer Authentication")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Certificates retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")

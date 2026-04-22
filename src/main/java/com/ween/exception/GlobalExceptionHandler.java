@@ -1,6 +1,7 @@
 package com.ween.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -161,6 +162,20 @@ public class GlobalExceptionHandler {
             .traceId(UUID.randomUUID().toString())
             .build();
         return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPropertyReference(PropertyReferenceException ex, WebRequest request) {
+        log.warn("Invalid request sort/property reference: {}", ex.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+            .timestamp(LocalDateTime.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error("Bad Request")
+            .message("Invalid sort property: " + ex.getPropertyName())
+            .path(request.getDescription(false).replace("uri=", ""))
+            .traceId(UUID.randomUUID().toString())
+            .build();
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)

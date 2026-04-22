@@ -4,7 +4,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/ween}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:Umut123!}
+    password: ${DB_PASSWORD:admin}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -77,5 +77,6 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+    persist-authorization: true
   api-docs:
     path: /v3/api-docs

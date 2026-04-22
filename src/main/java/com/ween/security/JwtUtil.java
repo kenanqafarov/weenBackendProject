@@ -69,15 +69,29 @@ public class JwtUtil {
         return (String) extractClaims(token).get("email");
     }
 
+    public UserRole extractRole(String token) {
+        Object roleClaim = extractClaims(token).get("role");
+        if (roleClaim == null) {
+            return null;
+        }
+        return UserRole.valueOf(roleClaim.toString());
+    }
+
+    public String extractTokenType(String token) {
+        Object typeClaim = extractClaims(token).get("type");
+        return typeClaim == null ? null : typeClaim.toString();
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token);
+            log.debug("JWT token validation successful");
             return true;
         } catch (Exception ex) {
-            log.warn("JWT validation failed: {}", ex.getMessage());
+            log.error("JWT validation failed: {} (class: {})", ex.getMessage(), ex.getClass().getSimpleName());
             return false;
         }
     }

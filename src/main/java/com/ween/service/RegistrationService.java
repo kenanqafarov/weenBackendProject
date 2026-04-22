@@ -134,7 +134,7 @@ public class RegistrationService {
     }
 
     public List<EventRegistration> getEventRegistrations(String eventId) {
-        return eventRegistrationRepository.findByEventIdAndIsJoinedTrue(eventId);
+        return eventRegistrationRepository.findByEventId(eventId);
     }
 
     public List<EventRegistration> getUserRegistrations(String userId) {
