@@ -150,6 +150,7 @@ public class AuthController {
             log.error("Logout failed", e);
             throw e;
         }
+
     }
 
     @GetMapping("/verify-email")
