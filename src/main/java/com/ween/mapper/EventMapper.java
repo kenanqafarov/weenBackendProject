@@ -9,7 +9,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface EventMapper {
     @Mapping(target = "currentRegistrations", ignore = true)
-    @Mapping(target = "organizationName", ignore = true)
     EventResponse toEventResponse(Event event);
     
     @Mapping(target = "currentRegistrations", ignore = true)
@@ -18,7 +17,4 @@ public interface EventMapper {
     @Mapping(target = "userRegistered", ignore = true)
     @Mapping(target = "userAttended", ignore = true)
     EventDetailResponse toEventDetailResponse(Event event);
-    
-    @Mapping(target = "customFields", ignore = true)
-    Event toEvent(EventResponse eventResponse);
 }

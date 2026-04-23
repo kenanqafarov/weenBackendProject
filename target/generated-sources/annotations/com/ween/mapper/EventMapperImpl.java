@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-23T17:36:11+0400",
+    date = "2026-04-24T00:06:31+0400",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
@@ -36,6 +36,7 @@ public class EventMapperImpl implements EventMapper {
         eventResponse.organizationId( event.getOrganizationId() );
         eventResponse.status( event.getStatus() );
         eventResponse.coverImageUrl( event.getCoverImageUrl() );
+        eventResponse.customFields( event.getCustomFields() );
         eventResponse.createdAt( event.getCreatedAt() );
         eventResponse.updatedAt( event.getUpdatedAt() );
 
@@ -69,30 +70,5 @@ public class EventMapperImpl implements EventMapper {
         eventDetailResponse.updatedAt( event.getUpdatedAt() );
 
         return eventDetailResponse.build();
-    }
-
-    @Override
-    public Event toEvent(EventResponse eventResponse) {
-        if ( eventResponse == null ) {
-            return null;
-        }
-
-        Event.EventBuilder event = Event.builder();
-
-        event.title( eventResponse.getTitle() );
-        event.description( eventResponse.getDescription() );
-        event.category( eventResponse.getCategory() );
-        event.city( eventResponse.getCity() );
-        event.address( eventResponse.getAddress() );
-        event.isOnline( eventResponse.getIsOnline() );
-        event.startDate( eventResponse.getStartDate() );
-        event.endDate( eventResponse.getEndDate() );
-        event.registrationDeadline( eventResponse.getRegistrationDeadline() );
-        event.maxParticipants( eventResponse.getMaxParticipants() );
-        event.organizationId( eventResponse.getOrganizationId() );
-        event.status( eventResponse.getStatus() );
-        event.coverImageUrl( eventResponse.getCoverImageUrl() );
-
-        return event.build();
     }
 }

@@ -12,6 +12,7 @@ import com.ween.enums.EventStatus;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.EventMapper;
 import com.ween.repository.EventRepository;
+import com.ween.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,7 @@ import java.util.Set;
 public class EventService {
 
     private final EventRepository eventRepository;
+    private final OrganizationRepository organizationRepository;
     private final EventMapper eventMapper;
     private final OrganizationService organizationService;
     private final RegistrationService registrationService;
@@ -235,17 +237,40 @@ public class EventService {
     }
 
     public List<EventResponse> getOrganizationEventsList(String orgId) {
+
+        String orgName = organizationRepository.findById(orgId)
+                .map(Organization::getOrganizationName)
+                .orElse(null);
+
         List<Event> events = eventRepository.findByOrganizationId(orgId);
 
         List<EventResponse> responseList = new ArrayList<>();
 
         for (Event event : events) {
 
-            EventResponse eventDto = eventMapper.toEventResponse(event);
-
             long count = registrationService.getEventRegistrationCount(event.getId());
 
-            eventDto.setCurrentRegistrations((int) count);
+            EventResponse eventDto = EventResponse.builder()
+                    .id(event.getId())
+                    .title(event.getTitle())
+                    .description(event.getDescription())
+                    .category(event.getCategory())
+                    .city(event.getCity())
+                    .address(event.getAddress())
+                    .isOnline(event.getIsOnline())
+                    .startDate(event.getStartDate())
+                    .endDate(event.getEndDate())
+                    .registrationDeadline(event.getRegistrationDeadline())
+                    .maxParticipants(event.getMaxParticipants())
+                    .organizationId(event.getOrganizationId())
+                    .status(event.getStatus())
+                    .coverImageUrl(event.getCoverImageUrl())
+                    .customFields(event.getCustomFields())
+                    .createdAt(event.getCreatedAt())
+                    .updatedAt(event.getUpdatedAt())
+                    .organizationName(orgName)
+                    .currentRegistrations((int) count)
+                    .build();
 
             responseList.add(eventDto);
         }
