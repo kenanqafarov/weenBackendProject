@@ -41,5 +41,6 @@ public class CreateEventRequest {
     private Integer maxParticipants;
     
     private String coverImageUrl;
+
     private String customFields;
 }

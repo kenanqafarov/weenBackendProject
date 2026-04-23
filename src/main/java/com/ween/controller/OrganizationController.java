@@ -1,10 +1,10 @@
-/*
 package com.ween.controller;
 
 
 import com.ween.dto.request.CreateOrganizationRequest;
 import com.ween.dto.request.UpdateOrganizationProfileRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
+import com.ween.dto.request.UpdateProfilePhotoRequest;
 import com.ween.dto.response.*;
 import com.ween.entity.Organization;
 import com.ween.security.SecurityUtil;
@@ -18,15 +18,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -36,52 +32,32 @@ import org.springframework.web.bind.annotation.*;
 public class OrganizationController {
 
     private final SecurityUtil securityUtil;
-    private final OrganizationService organizationService;
     private final EventService eventService;
+    private final OrganizationService organizationService;
 
-    @PostMapping
-    @Transactional
-    @Operation(summary = "Create organization", description = "Create a new organization (ORGANIZER only)")
-    @SecurityRequirement(name = "Bearer")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "Organization created successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid input"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Insufficient permissions")
-    })
-    public ResponseEntity<ApiResponse<Organization>> createOrganization(
-            @Valid @RequestBody CreateOrganizationRequest request) {
-        try {
-            String userId = securityUtil.getCurrentUserId();
-            Organization response = organizationService.createOrganization(request, userId);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.ok(response, "Organization created successfully"));
-        } catch (Exception e) {
-            log.error("Failed to create organization for user: {}", getCurrentUserId(), e);
-            throw e;
-        }
-    }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Get organization details", description = "Retrieve detailed information about an organization")
+    @Operation(summary = "Get current organization profile", description = "Retrieve detailed information about an organization")
+    @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organization retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organization not found")
     })
-    public ResponseEntity<ApiResponse<Organization>> getOrganization(
-            @Parameter(description = "Organization ID", required = true) @PathVariable String id) {
+    public ResponseEntity<ApiResponse<Organization>> getOrganization() {
+        String orgId = null;
         try {
-            Organization response = organizationService.getOrganizationById(id);
+            orgId = securityUtil.getCurrentUserId();
+            Organization response = organizationService.getOrganizationById(orgId);
             return ResponseEntity.ok(ApiResponse.ok(response, "Organization retrieved successfully"));
         } catch (Exception e) {
-            log.error("Failed to retrieve organization: {}", id, e);
+            log.error("Failed to retrieve organization: {}", orgId, e);
             throw e;
         }
     }
 
     @PutMapping("/{id}")
     @Transactional
-    @Operation(summary = "Update organization", description = "Update organization details (owner only)")
+    @Operation(summary = "Update current organization profile", description = "Update organization details (owner only)")
     @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organization updated successfully"),
@@ -90,63 +66,68 @@ public class OrganizationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organization not found")
     })
     public ResponseEntity<ApiResponse<Organization>> updateOrganization(
-            @Parameter(description = "Organization ID", required = true) @PathVariable String id,
+            @Parameter(description = "Organization ID", required = true)
             @Valid @RequestBody UpdateOrganizationRequest request) {
+        String orgId = null;
         try {
-            String userId = securityUtil.getCurrentUserId();
-            Organization response = organizationService.updateOrganization(userId, id, request);
+            orgId = securityUtil.getCurrentUserId();
+            Organization response = organizationService.updateOrganization(orgId, request);
             return ResponseEntity.ok(ApiResponse.ok(response, "Organization updated successfully"));
         } catch (Exception e) {
-            log.error("Failed to update organization: {}", id, e);
+            log.error("Failed to update organization: {}", orgId, e);
             throw e;
         }
     }
 
-    @GetMapping("/{id}/events")
-    @Operation(summary = "Get organization events", description = "Retrieve pageable list of events organized by this organization")
-    @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Events retrieved successfully"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organization not found")
-    })
-    public ResponseEntity<ApiResponse<Page<EventResponse>>> getOrganizationEvents(
-            @Parameter(description = "Organization ID", required = true) @PathVariable String id,
-            @PageableDefault(size = 20) Pageable pageable) {
-        try {
-            Page<EventResponse> response = eventService.getOrganizationEvents(id, pageable);
-            return ResponseEntity.ok(ApiResponse.ok(response, "Events retrieved successfully"));
-        } catch (Exception e) {
-            log.error("Failed to retrieve events for organization: {}", id, e);
-            throw e;
-        }
-    }
 
-    @GetMapping("/{id}/analytics")
-    @Operation(summary = "Get organization analytics", description = "Get analytics dashboard for organization")
+    @PutMapping("/{id}/logo")
+    @Transactional
+    @Operation(summary = "Update current organization logo", description = "Update organization logo (owner only)")
     @SecurityRequirement(name = "Bearer")
     @ApiResponses(value = {
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Analytics retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Organization updated successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only owner can view analytics"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only owner can update"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organization not found")
     })
-    public ResponseEntity<ApiResponse<Object>> getOrganizationAnalytics(
-            @Parameter(description = "Organization ID", required = true) @PathVariable String id) {
+    public ResponseEntity<ApiResponse<Organization>> updateOrganizationLogo(
+            @Parameter(description = "Organization ID", required = true)
+            @Valid @RequestBody UpdateProfilePhotoRequest request) {
+        String organizationId=null;
         try {
-            String userId = getCurrentUserId();
-            Object response = organizationService.getOrganizationAnalytics(userId, id);
-            return ResponseEntity.ok(ApiResponse.ok(response, "Analytics retrieved successfully"));
+            organizationId = securityUtil.getCurrentUserId();
+            Organization response = organizationService.updateOrganizationPhoto(organizationId,request);
+            return ResponseEntity.ok(ApiResponse.ok(response, "Organization logo updated successfully"));
         } catch (Exception e) {
-            log.error("Failed to retrieve analytics for organization: {}", id, e);
+            log.error("Failed to update organization: {}", organizationId, e);
             throw e;
         }
     }
 
-    private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new RuntimeException("User not authenticated");
+
+    @GetMapping("/current-organization-events")
+    @Operation(
+            summary = "Get current organization events",
+            description = "Retrieve all events for the authenticated organization using JWT token"
+    )
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Events retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - Token is missing or invalid"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Organization not found")
+    })
+    @SecurityRequirement(name = "Bearer")
+    public ResponseEntity<ApiResponse<List<EventResponse>>> getOrganizationEvents() {
+        String orgId = null;
+        try {
+            orgId = securityUtil.getCurrentUserId();
+
+            List<EventResponse> response = eventService.getOrganizationEventsList(orgId);
+
+            return ResponseEntity.ok(ApiResponse.ok(response, "Events retrieved successfully"));
+        } catch (Exception e) {
+            log.error("Failed to retrieve events for organization: {}", orgId, e);
+            throw e;
         }
-        return (String) authentication.getPrincipal();
     }
+
 }
-*/

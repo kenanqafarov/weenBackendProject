@@ -1,9 +1,11 @@
 package com.ween.service;
 
+import com.ween.dto.request.UpdateProfilePhotoRequest;
 import com.ween.dto.request.UpdateProfileRequest;
 import com.ween.dto.response.PublicProfileResponse;
 import com.ween.dto.response.UserResponse;
 import com.ween.entity.User;
+import com.ween.enums.UserRole;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.UserMapper;
 import com.ween.repository.UserRepository;
@@ -113,7 +115,7 @@ public class UserService {
     }
 
     @Transactional
-    public User updateUserRole(String userId, com.ween.enums.UserRole role) {
+    public User updateUserRole(String userId, UserRole role) {
         User user = getUserById(userId);
         user.setRole(role);
         User updated = userRepository.save(user);
@@ -132,7 +134,17 @@ public class UserService {
         return userMapper.toPublicProfileResponse(user);
     }
 
-    public UserResponse updateProfilePhoto(String userId, String photoUrl) {
-        return null;
+
+    public User updateProfilePhoto(String userId, UpdateProfilePhotoRequest request) {
+
+        User user = getUserById(userId);
+
+        if (request.getImageUrl() != null) {
+            user.setProfilePhotoUrl(request.getImageUrl());
+        }
+
+        User updated = userRepository.save(user);
+        log.info("User profile photo updated: {}", userId);
+        return updated;
     }
 }

@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -47,6 +49,8 @@ public class EventService {
                 .category(request.getCategory())
                 .city(request.getCity())
                 .address(request.getAddress())
+                .coverImageUrl(request.getCoverImageUrl())
+                .customFields(request.getCustomFields())
                 .isOnline(request.getIsOnline())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
@@ -163,10 +167,6 @@ public class EventService {
         log.info("Event deleted: {}", eventId);
     }
 
-    public Page<Event> getEventsByOrganization(String organizationId, Pageable pageable) {
-        return eventRepository.findByOrganizationId(organizationId, pageable);
-    }
-
     public Page<Event> getAllPublishedEvents(Pageable pageable) {
         return eventRepository.findAll(pageable);
     }
@@ -234,17 +234,23 @@ public class EventService {
         log.info("Custom fields set for event: {}", eventId);
     }
 
-    public Integer getEventLimitForOrganization(String organizationId) {
-        return Integer.MAX_VALUE;
-    }
+    public List<EventResponse> getOrganizationEventsList(String orgId) {
+        List<Event> events = eventRepository.findByOrganizationId(orgId);
 
-    public Page<EventResponse> getOrganizationEvents(String id, Pageable pageable) {
-        Page<Event> events = eventRepository.findByOrganizationId(id, pageable);
-        return events.map(event -> {
-            EventResponse response = eventMapper.toEventResponse(event);
-            response.setCurrentRegistrations((int) registrationService.getEventRegistrationCount(event.getId()));
-            return response;
-        });
+        List<EventResponse> responseList = new ArrayList<>();
+
+        for (Event event : events) {
+
+            EventResponse eventDto = eventMapper.toEventResponse(event);
+
+            long count = registrationService.getEventRegistrationCount(event.getId());
+
+            eventDto.setCurrentRegistrations((int) count);
+
+            responseList.add(eventDto);
+        }
+
+        return responseList;
     }
 
     public Page<EventResponse> listEvents(EventCategory category, String city, LocalDateTime dateFrom, LocalDateTime dateTo, String search, String organizationId, String sort, Pageable pageable) {

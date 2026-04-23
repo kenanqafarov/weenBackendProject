@@ -15,8 +15,7 @@ import java.util.List;
 
 @Repository
 public interface EventRepository extends JpaRepository<Event, String> {
-    Page<Event> findByOrganizationId(String orgId, Pageable pageable);
-    long countByOrganizationIdAndStatusIn(String orgId, List<EventStatus> statuses);
+    List<Event> findByOrganizationId(String orgId);
     
     @Query(value = "SELECT * FROM events WHERE MATCH(title, description) AGAINST(:query IN BOOLEAN MODE)",
            nativeQuery = true)

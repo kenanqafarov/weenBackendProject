@@ -97,8 +97,8 @@ public class EventController {
     public ResponseEntity<ApiResponse<Event>> createEvent(
             @Valid @RequestBody CreateEventRequest request) {
         try {
-            String userId = getCurrentUserId();
-            Event response = eventService.createEvent(request, userId);
+            String orgId = getCurrentUserId();
+            Event response = eventService.createEvent(request, orgId);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(ApiResponse.ok(response, "Event created successfully"));
         } catch (Exception e) {
