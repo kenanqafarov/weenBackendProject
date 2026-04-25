@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -82,10 +81,6 @@ public class CoinService {
         return coinTransactionRepository.findByUserId(userId);
     }
 
-    public Integer getTotalCoinsEarned(String userId, CoinReason reason) {
-        return coinTransactionRepository.sumByUserIdAndReason(userId, reason);
-    }
-
     @Transactional
     public void awardSignupBonus(String userId) {
         long signupCount = coinTransactionRepository.countByUserIdAndReason(userId, CoinReason.SIGNUP);
@@ -137,31 +132,12 @@ public class CoinService {
     }
 
     @Transactional
-    public void awardInternationalBonus(String userId) {
-        long internationalCount = coinTransactionRepository.countByUserIdAndReason(userId, CoinReason.INTERNATIONAL);
-        
-        // One-time bonus prevention
-        if (internationalCount == 0) {
-            credit(userId, 200, CoinReason.INTERNATIONAL, null);
-            log.info("International bonus awarded to user: {}", userId);
-        } else {
-            log.info("International bonus already awarded to user: {}", userId);
-        }
-    }
-
-    @Transactional
     public void awardLeaderboardBonus(String userId, Integer rank) {
         Integer bonusCoins = calculateLeaderboardBonus(rank);
         if (bonusCoins > 0) {
             credit(userId, bonusCoins, CoinReason.LEADERBOARD_BONUS, null);
             log.info("Leaderboard bonus awarded to user: {} for rank: {}", userId, rank);
         }
-    }
-
-    @Transactional
-    public void awardAnnualAchievementBonus(String userId) {
-        credit(userId, 300, CoinReason.ANNUAL_ACHIEVEMENT, null);
-        log.info("Annual achievement bonus awarded to user: {}", userId);
     }
 
     private Integer calculateLeaderboardBonus(Integer rank) {

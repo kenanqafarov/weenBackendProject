@@ -1,26 +1,14 @@
 package com.ween.service;
 
-import com.ween.dto.request.CreateOrganizationRequest;
 import com.ween.dto.request.UpdateOrganizationRequest;
 import com.ween.dto.request.UpdateProfilePhotoRequest;
-import com.ween.entity.Event;
 import com.ween.entity.Organization;
-import com.ween.entity.User;
-import com.ween.enums.EventStatus;
-import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.ResourceNotFoundException;
-import com.ween.mapper.OrganizationMapper;
-import com.ween.repository.EventRepository;
 import com.ween.repository.OrganizationRepository;
-import com.ween.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Slf4j
 @Service
@@ -29,9 +17,6 @@ import java.util.List;
 public class OrganizationService {
 
     private final OrganizationRepository organizationRepository;
-    private final OrganizationMapper organizationMapper;
-    private final UserRepository userRepository;
-    private final EventRepository eventRepository;
 
     public Organization getOrganizationById(String organizationId) {
         return organizationRepository.findById(organizationId)
@@ -84,13 +69,6 @@ public class OrganizationService {
 
         log.info("User profile photo updated: {}", organizationId);
         return updated;
-    }
-
-    @Transactional
-    public void deleteOrganization(String organizationId) {
-        Organization organization = getOrganizationById(organizationId);
-        organizationRepository.delete(organization);
-        log.info("Organization deleted: {}", organizationId);
     }
 
 }

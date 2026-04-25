@@ -1,11 +1,8 @@
 package com.ween.service;
 
-import com.ween.dto.request.UpdateProfilePhotoRequest;
 import com.ween.dto.request.UpdateProfileRequest;
 import com.ween.dto.response.PublicProfileResponse;
-import com.ween.dto.response.UserResponse;
 import com.ween.entity.User;
-import com.ween.enums.UserRole;
 import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.UserMapper;
 import com.ween.repository.UserRepository;
@@ -27,11 +24,6 @@ public class UserService {
     public User getUserById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
-    }
-
-    public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
 
     public User getUserByUsername(String username) {
@@ -93,58 +85,10 @@ public class UserService {
         return user.getWeenCoinBalance();
     }
 
-    public User getUserWithStats(String userId) {
-        User user = getUserById(userId);
-        // Additional stats can be added here in future
-        return user;
-    }
-
-    @Transactional
-    public void deleteUser(String userId) {
-        User user = getUserById(userId);
-        userRepository.delete(user);
-        log.info("User deleted: {}", userId);
-    }
-
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
-
-    @Transactional
-    public User updateUserRole(String userId, UserRole role) {
-        User user = getUserById(userId);
-        user.setRole(role);
-        User updated = userRepository.save(user);
-        log.info("User role updated to {} for user: {}", role, userId);
-        return updated;
-    }
-
-    public String getUserReferralCode(String userId) {
-        User user = getUserById(userId);
-        return user.getReferralCode();
-    }
-
-
     public PublicProfileResponse getPublicProfile(String username) {
         User user = getUserByUsername(username);
         return userMapper.toPublicProfileResponse(user);
     }
 
 
-    public User updateProfilePhoto(String userId, UpdateProfilePhotoRequest request) {
-
-        User user = getUserById(userId);
-
-        if (request.getImageUrl() != null) {
-            user.setProfilePhotoUrl(request.getImageUrl());
-        }
-
-        User updated = userRepository.save(user);
-        log.info("User profile photo updated: {}", userId);
-        return updated;
-    }
 }

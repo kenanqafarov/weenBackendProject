@@ -4,7 +4,6 @@ import com.ween.dto.response.EventResponse;
 import com.ween.dto.response.ParticipantResponse;
 import com.ween.entity.Event;
 import com.ween.entity.EventRegistration;
-import com.ween.entity.User;
 import com.ween.enums.CoinReason;
 import com.ween.exception.AlreadyExistsException;
 import com.ween.exception.EventCapacityExceededException;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
@@ -43,9 +41,6 @@ public class RegistrationService {
     public EventRegistration registerForEvent(String eventId, String userId) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found: " + eventId));
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userId));
 
         // Check if already registered
         if (eventRegistrationRepository.findByEventIdAndUserId(eventId, userId).isPresent()) {
@@ -129,11 +124,6 @@ public class RegistrationService {
         }
     }
 
-    public EventRegistration getRegistration(String eventId, String userId) {
-        return eventRegistrationRepository.findByEventIdAndUserId(eventId, userId)
-                .orElseThrow(() -> new EventNotRegisteredException("Registration not found"));
-    }
-
     public List<EventRegistration> getEventRegistrations(String eventId) {
         return eventRegistrationRepository.findByEventId(eventId);
     }
@@ -150,46 +140,12 @@ public class RegistrationService {
         return eventRegistrationRepository.countByEventIdAndIsJoinedTrue(eventId);
     }
 
-    public boolean isUserRegistered(String eventId, String userId) {
-        return eventRegistrationRepository.findByEventIdAndUserId(eventId, userId).isPresent();
-    }
-
-    public boolean hasUserAttended(String eventId, String userId) {
-        return eventRegistrationRepository.findByEventIdAndUserId(eventId, userId)
-                .map(EventRegistration::getIsJoined)
-                .orElse(false);
-    }
-
     @Transactional
     public void cancelAllRegistrationsForEvent(String eventId) {
         List<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventId);
         eventRegistrationRepository.deleteAll(registrations);
 
         log.info("All registrations cancelled for event: {}", eventId);
-    }
-
-    @Transactional
-    public void sendEventReminder(String eventId) {
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
-
-        List<EventRegistration> registrations = getEventRegistrations(eventId);
-        for (EventRegistration registration : registrations) {
-            try {
-                User user = userRepository.findById(registration.getUserId())
-                        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-                String reminderMessage = "Event " + event.getTitle() + " is starting soon! Don't forget to check in.";
-                notificationService.createNotification(
-                        registration.getUserId(),
-                        com.ween.enums.NotificationType.EVENT_REMINDER,
-                        "Event Reminder",
-                        reminderMessage
-                );
-            } catch (Exception e) {
-                log.warn("Failed to send reminder to user: {}", registration.getUserId(), e);
-            }
-        }
     }
 
     public Page<EventResponse> getUserEvents(String userId, Pageable pageable) {

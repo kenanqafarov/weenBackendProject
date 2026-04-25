@@ -15,7 +15,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,12 +40,6 @@ public class NotificationService {
         return saved;
     }
 
-    public Notification createEventNotification(String userId, String eventTitle, String eventCity) {
-        String title = "New Event: " + eventTitle;
-        String body = "An event is happening in " + eventCity;
-        return createNotification(userId, NotificationType.EVENT_REMINDER, title, body);
-    }
-
     public Notification createRegistrationNotification(String userId, String eventTitle) {
         String title = "Registration Successful";
         String body = "You have registered for " + eventTitle;
@@ -57,12 +50,6 @@ public class NotificationService {
         String title = "Certificate Ready";
         String body = "Your certificate for " + eventTitle + " is ready. Number: " + certificateNumber;
         return createNotification(userId, NotificationType.CERTIFICATE_READY, title, body);
-    }
-
-    public Notification createCoinRewardNotification(String userId, Integer coins, String reason) {
-        String title = "Coins Earned!";
-        String body = "You earned " + coins + " coins for " + reason;
-        return createNotification(userId, NotificationType.COIN_EARNED, title, body);
     }
 
     public Notification getNotificationById(String notificationId) {
@@ -104,22 +91,4 @@ public class NotificationService {
         log.info("All notifications marked as read for user: {}", userId);
     }
 
-    public void deleteNotification(String notificationId) {
-        Notification notification = getNotificationById(notificationId);
-        notificationRepository.delete(notification);
-        log.info("Notification deleted: {}", notificationId);
-    }
-
-    public void deleteAllUserNotifications(String userId) {
-        Page<Notification> notifications = getUserNotifications(userId, org.springframework.data.domain.Pageable.unpaged());
-        notificationRepository.deleteAll(notifications.getContent());
-        log.info("All notifications deleted for user: {}", userId);
-    }
-
-    public long getUnreadCount(String userId) {
-        Page<Notification> notifications = getUserNotifications(userId, org.springframework.data.domain.Pageable.unpaged());
-        return notifications.getContent().stream()
-                .filter(n -> !n.getIsRead())
-                .count();
-    }
 }

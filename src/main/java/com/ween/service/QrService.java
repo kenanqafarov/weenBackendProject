@@ -1,7 +1,6 @@
 package com.ween.service;
 
 import com.ween.dto.response.CheckinResponse;
-import com.ween.dto.response.QrResponse;
 import com.ween.entity.Event;
 import com.ween.entity.QrToken;
 import com.ween.entity.User;
@@ -90,8 +89,6 @@ public class QrService {
 
             // Validate JWT token
             String userId = jwtUtil.extractUserId(decryptedToken);
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
             // Find and verify token record
             QrToken qrToken = qrTokenRepository.findByUserIdAndIsRevokedFalse(userId)
@@ -119,65 +116,10 @@ public class QrService {
         }
     }
 
-    @Transactional
-    public void revokeQrToken(String userId) {
-        qrTokenRepository.findByUserIdAndIsRevokedFalse(userId).ifPresent(qrToken -> {
-            qrToken.setIsRevoked(true);
-            qrTokenRepository.save(qrToken);
-        });
-        log.info("QR token revoked for user: {}", userId);
-    }
-
-    @Transactional
-    public void performCheckin(String eventId, String encryptedQrToken) {
-        try {
-            // Validate and decrypt QR token
-            String userId = validateAndDecryptQrToken(encryptedQrToken);
-
-            // Mark user as joined in event registration
-            registrationService.markUserAsJoined(eventId, userId);
-            log.info("Checkin successful for user: {} at event: {}", userId, eventId);
-        } catch (Exception e) {
-            log.error("Checkin failed", e);
-            throw e;
-        }
-    }
-
     public boolean isQrTokenValid(String userId) {
         return qrTokenRepository.findByUserIdAndIsRevokedFalse(userId)
                 .filter(qrToken -> LocalDateTime.now().isBefore(qrToken.getExpiresAt()))
                 .isPresent();
-    }
-
-    public QrToken getQrTokenInfo(String userId) {
-        return qrTokenRepository.findByUserIdAndIsRevokedFalse(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("QR token not found for user: " + userId));
-    }
-
-    @Transactional
-    public void refreshQrToken(String userId) {
-        // Revoke old token and generate new one
-        revokeQrToken(userId);
-        generateQrToken(userId);
-        log.info("QR token refreshed for user: {}", userId);
-    }
-
-    public LocalDateTime getQrTokenExpiryTime(String userId) {
-        return getQrTokenInfo(userId).getExpiresAt();
-    }
-
-    public Integer getRemainingQrTokenValidityHours(String userId) {
-        QrToken qrToken = getQrTokenInfo(userId);
-        long hoursRemaining = java.time.temporal.ChronoUnit.HOURS.between(
-                LocalDateTime.now(),
-                qrToken.getExpiresAt()
-        );
-        return Math.max(0, (int) hoursRemaining);
-    }
-
-
-    public QrResponse generateQrCode(String userId) {
-        return null;
     }
 
     public CheckinResponse checkinParticipant(@NotBlank(message = "Event ID is required") String eventId, @NotBlank(message = "QR token is required") String qrToken) {
@@ -205,9 +147,5 @@ public class QrService {
             .participantPhoto(participant.getProfilePhotoUrl())
             .message("Check-in successful")
             .build();
-    }
-
-    public Object getLiveEventStats(String id) {
-        return null;
     }
 }

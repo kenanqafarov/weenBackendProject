@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -47,7 +46,6 @@ public class EventService {
 
     @Transactional
     public Event createEvent(CreateEventRequest request, String organizationId) {
-        Organization organization = organizationService.getOrganizationById(organizationId);
 
         Event event = Event.builder()
                 .title(request.getTitle())
@@ -130,30 +128,6 @@ public class EventService {
     }
 
     @Transactional
-    public void publishEvent(String eventId) {
-        Event event = getEventById(eventId);
-        event.setStatus(EventStatus.PUBLISHED);
-        eventRepository.save(event);
-        log.info("Event published: {}", eventId);
-    }
-
-    @Transactional
-    public void startEvent(String eventId) {
-        Event event = getEventById(eventId);
-        event.setStatus(EventStatus.ONGOING);
-        eventRepository.save(event);
-        log.info("Event started: {}", eventId);
-    }
-
-    @Transactional
-    public void completeEvent(String eventId) {
-        Event event = getEventById(eventId);
-        event.setStatus(EventStatus.COMPLETED);
-        eventRepository.save(event);
-        log.info("Event completed: {}", eventId);
-    }
-
-    @Transactional
     public void cancelEvent(String eventId, String userId) {
         Event event = getEventById(eventId);
 
@@ -164,80 +138,6 @@ public class EventService {
         registrationService.cancelAllRegistrationsForEvent(eventId);
         eventRepository.delete(event);
         log.info("Event deleted: {} by owner: {}", eventId, userId);
-    }
-
-    @Transactional
-    public void deleteEvent(String eventId) {
-        Event event = getEventById(eventId);
-        eventRepository.delete(event);
-        log.info("Event deleted: {}", eventId);
-    }
-
-    public Page<Event> getAllPublishedEvents(Pageable pageable) {
-        return eventRepository.findAll(pageable);
-    }
-
-    public long getEventParticipantCount(String eventId) {
-        return eventRepository.findById(eventId)
-                .map(event -> {
-                    // Will be calculated from EventRegistration count in RegistrationService
-                    return 0L;
-                })
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
-    }
-
-    public boolean isEventCapacityFull(String eventId) {
-        Event event = getEventById(eventId);
-        if (event.getMaxParticipants() == null) {
-            return false;
-        }
-
-        // Get registrations count from repository
-        long registrationCount = eventRepository.findById(eventId)
-                .map(e -> 0L) // Will be replaced with actual count from RegistrationService
-                .orElse(0L);
-
-        return registrationCount >= event.getMaxParticipants();
-    }
-
-    public Integer getRemainingCapacity(String eventId) {
-        Event event = getEventById(eventId);
-        if (event.getMaxParticipants() == null) {
-            return Integer.MAX_VALUE;
-        }
-
-        long registrationCount = 0; // Will be fetched from RegistrationService
-        return Math.max(0, (int) (event.getMaxParticipants() - registrationCount));
-    }
-
-    public boolean isRegistrationDeadlinePassed(String eventId) {
-        Event event = getEventById(eventId);
-        if (event.getRegistrationDeadline() == null) {
-            return false;
-        }
-        return java.time.LocalDateTime.now().isAfter(event.getRegistrationDeadline());
-    }
-
-    public boolean isEventInFuture(String eventId) {
-        Event event = getEventById(eventId);
-        if (event.getStartDate() == null) {
-            return false;
-        }
-        return event.getStartDate().isAfter(java.time.LocalDateTime.now());
-    }
-
-    public boolean isEventOngoing(String eventId) {
-        Event event = getEventById(eventId);
-        java.time.LocalDateTime now = java.time.LocalDateTime.now();
-        return now.isAfter(event.getStartDate()) && now.isBefore(event.getEndDate());
-    }
-
-    @Transactional
-    public void setCustomFields(String eventId, String customFieldsJson) {
-        Event event = getEventById(eventId);
-        event.setCustomFields(customFieldsJson);
-        eventRepository.save(event);
-        log.info("Custom fields set for event: {}", eventId);
     }
 
     public List<EventResponse> getOrganizationEventsList(String orgId) {

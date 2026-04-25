@@ -5,7 +5,6 @@ import com.ween.entity.LeaderboardEntry;
 import com.ween.entity.User;
 import com.ween.enums.LeaderboardPeriod;
 import com.ween.enums.LeaderboardScope;
-import com.ween.exception.ResourceNotFoundException;
 import com.ween.mapper.LeaderboardEntryMapper;
 import com.ween.repository.CoinTransactionRepository;
 import com.ween.repository.LeaderboardEntryRepository;
@@ -59,28 +58,6 @@ public class LeaderboardService {
                 .collect(Collectors.toList());
 
         return new PageImpl<>(mappedEntries, pageable, entries.getTotalElements());
-    }
-
-    public LeaderboardEntry getUserLeaderboardPosition(String userId, LeaderboardPeriod period, LeaderboardScope scope) {
-        Page<LeaderboardEntry> entries = getLeaderboard(period, scope, org.springframework.data.domain.Pageable.unpaged());
-        return entries.getContent().stream()
-                .filter(entry -> entry.getUserId().equals(userId))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found in leaderboard"));
-    }
-
-    public Integer getUserRank(String userId, LeaderboardPeriod period, LeaderboardScope scope) {
-        try {
-            return getUserLeaderboardPosition(userId, period, scope).getRankPosition();
-        } catch (ResourceNotFoundException e) {
-            return null;
-        }
-    }
-
-    public Integer getUserTotalCoins(String userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        return user.getWeenCoinBalance();
     }
 
     @Scheduled(cron = "0 0 * * * *") // Run every hour
@@ -203,7 +180,7 @@ public class LeaderboardService {
 
     public Top10LeaderboardDto getTop10Leaderboard(LeaderboardPeriod period, LeaderboardScope scope) {
         Page<LeaderboardEntry> entries = getLeaderboard(period, scope, org.springframework.data.domain.PageRequest.of(0, 10));
-        
+
         List<LeaderboardEntryDto> entryDtos = entries.getContent().stream()
                 .map(entry -> {
                     User user = userRepository.findById(entry.getUserId()).orElse(null);
@@ -217,19 +194,6 @@ public class LeaderboardService {
                 .collect(Collectors.toList());
 
         return new Top10LeaderboardDto(period, scope, entryDtos);
-    }
-
-    public Integer getUserCoinsSinceDate(String userId, LocalDateTime sinceDate) {
-        List<com.ween.entity.CoinTransaction> transactions = coinTransactionRepository.findByUserId(userId);
-        return transactions.stream()
-                .filter(t -> t.getCreatedAt() != null && t.getCreatedAt().isAfter(sinceDate))
-                .map(com.ween.entity.CoinTransaction::getAmount)
-                .reduce(0, Integer::sum);
-    }
-
-    public List<LeaderboardEntry> getTopUsers(LeaderboardPeriod period, LeaderboardScope scope, Integer limit) {
-        Page<LeaderboardEntry> entries = getLeaderboard(period, scope, org.springframework.data.domain.PageRequest.of(0, limit));
-        return entries.getContent();
     }
 
     // Inner DTOs for backward compatibility

@@ -17,19 +17,15 @@ import com.ween.entity.Event;
 import com.ween.entity.User;
 import com.ween.enums.CertificateTemplate;
 import com.ween.exception.ResourceNotFoundException;
-import com.ween.mapper.CertificateMapper;
 import com.ween.repository.CertificateRepository;
 import com.ween.repository.EventRepository;
 import com.ween.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,27 +36,11 @@ import java.util.UUID;
 public class CertificateService {
 
     private final CertificateRepository certificateRepository;
-    private final CertificateMapper certificateMapper;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
     private final CoinService coinService;
     private final NotificationService notificationService;
     // private final FirebaseService firebaseService; // DISABLED
-
-    @Async("taskExecutor")
-    @Transactional
-    public void generateCertificateAsync(String userId, String eventId, CertificateTemplate template) {
-        try {
-            generateCertificate(userId, eventId, template);
-        } catch (Exception e) {
-            log.error("Failed to generate certificate asynchronously", e);
-        }
-    }
-
-    @Transactional
-    public Certificate generateCertificate(String userId, String eventId) {
-        return generateCertificate(userId, eventId, CertificateTemplate.GENERAL);
-    }
 
     @Transactional
     public Certificate generateCertificate(String userId, String eventId, CertificateTemplate template) {
@@ -115,54 +95,16 @@ public class CertificateService {
         return saved;
     }
 
-    public Certificate getCertificateById(String certificateId) {
-        return certificateRepository.findById(certificateId)
-                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certificateId));
-    }
-
-    public Certificate getCertificateByNumber(String certificateNumber) {
-        return certificateRepository.findByCertificateNumber(certificateNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certificateNumber));
-    }
 
     public List<Certificate> getUserCertificates(String userId) {
         return certificateRepository.findByUserId(userId);
     }
 
-    public byte[] downloadCertificate(String certificateId) {
-        Certificate certificate = getCertificateById(certificateId);
-        try {
-            // StorageService removed - PDF download functionality disabled
-            log.info("Certificate download requested for: {}", certificateId);
-            return new byte[0];
-        } catch (Exception e) {
-            log.error("Failed to download certificate", e);
-            throw new RuntimeException("Failed to download certificate", e);
-        }
-    }
-
-    @Transactional
-    public void deleteCertificate(String certificateId) {
-        Certificate certificate = getCertificateById(certificateId);
-        
-        try {
-            // StorageService removed - PDF deletion functionality disabled
-            log.info("Certificate PDF deletion skipped: {}", certificateId);
-        } catch (Exception e) {
-            log.warn("Failed to delete PDF file", e);
-        }
-
-        certificateRepository.delete(certificate);
-        log.info("Certificate deleted: {}", certificateId);
-    }
 
     public boolean verifyCertificate(String certificateNumber) {
         return certificateRepository.findByCertificateNumber(certificateNumber).isPresent();
     }
 
-    public Integer getUserCertificateCount(String userId) {
-        return (int) getUserCertificates(userId).size();
-    }
 
     // iText-based PDF generation disabled - dependency commented out
     /*
