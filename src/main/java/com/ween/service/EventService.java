@@ -10,24 +10,27 @@ import com.ween.entity.Organization;
 import com.ween.enums.EventCategory;
 import com.ween.enums.EventStatus;
 import com.ween.exception.ResourceNotFoundException;
+import com.ween.exception.ServiceUnavailableException;
 import com.ween.mapper.EventMapper;
+import com.ween.repository.EventRegistrationRepository;
 import com.ween.repository.EventRepository;
 import com.ween.repository.OrganizationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -37,6 +40,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final OrganizationRepository organizationRepository;
+    private final EventRegistrationRepository registrationRepository;
     private final EventMapper eventMapper;
     private final OrganizationService organizationService;
     private final RegistrationService registrationService;
@@ -279,32 +283,85 @@ public class EventService {
     }
 
     public Page<EventResponse> listEvents(EventCategory category, String city, LocalDateTime dateFrom, LocalDateTime dateTo, String search, String organizationId, String sort, Pageable pageable) {
-        Pageable safePageable = buildSafePageable(pageable, sort);
-        Page<Event> events = eventRepository.findAll(safePageable);
+        try {
+            Pageable safePageable = buildSafePageable(pageable, sort);
 
-        var eventList = events.getContent().stream()
-                .filter(e -> category == null || category.equals(e.getCategory()))
-                .filter(e -> city == null || city.isEmpty() || city.equalsIgnoreCase(e.getCity()))
-                .filter(e -> dateFrom == null || (e.getStartDate() != null && e.getStartDate().isAfter(dateFrom)))
-                .filter(e -> dateTo == null || (e.getEndDate() != null && e.getEndDate().isBefore(dateTo)))
-                .filter(e -> search == null || search.isEmpty() ||
-                        e.getTitle().toLowerCase().contains(search.toLowerCase()) ||
-                        e.getDescription().toLowerCase().contains(search.toLowerCase()))
-                .filter(e -> organizationId == null || organizationId.isEmpty() || organizationId.equals(e.getOrganizationId()))
-                .map(event -> {
-                    EventResponse response = eventMapper.toEventResponse(event);
-                    response.setCurrentRegistrations((int) registrationService.getEventRegistrationCount(event.getId()));
-                    try {
-                        Organization org = organizationService.getOrganizationById(event.getOrganizationId());
-                        response.setOrganizationName(org.getOrganizationName());
-                    } catch (Exception e) {
-                        log.warn("Organization not found for event: {}", event.getId());
-                    }
-                    return response;
-                })
-                .toList();
+            // filter everything in db query instead of filtering them in memory
+            Specification<Event> spec = Specification.where(hasCategory(category))
+                    .and(hasCity(city))
+                    .and(startDateAfter(dateFrom))
+                    .and(endDateBefore(dateTo))
+                    .and(hasSearch(search))
+                    .and(hasOrganization(organizationId));
 
-        return new PageImpl<>(eventList, safePageable, eventList.size());
+            Page<Event> events = eventRepository.findAll(spec, safePageable);
+
+            List<String> eventIds = events.getContent().stream()
+                    .map(Event::getId)
+                    .toList();
+            Map<String, Long> registrationCounts = registrationRepository.countsByEventIds(eventIds);
+
+            List<String> orgIds = events.getContent().stream()
+                    .map(Event::getOrganizationId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            Map<String, String> orgNames = organizationRepository.findAllById(orgIds)
+                    .stream()
+                    .collect(Collectors.toMap(Organization::getId, Organization::getOrganizationName));
+
+            return events.map(event -> {
+                EventResponse response = eventMapper.toEventResponse(event);
+                response.setCurrentRegistrations(
+                        registrationCounts.getOrDefault(event.getId(), 0L).intValue()
+                );
+                response.setOrganizationName(orgNames.get(event.getOrganizationId()));
+                return response;
+            });
+        } catch (DataAccessException e) {
+            log.error("Database error whilst listing events");
+            throw new ServiceUnavailableException("Our services are currently unavailable, please try again later");
+        } catch (Exception e) {
+            log.error("Unexpected error whilst listin events", e);
+            throw new ServiceUnavailableException("Our services are currently unavailable, please try again later");
+        }
+    }
+
+    // Specifications
+    private Specification<Event> hasCategory(EventCategory category) {
+        return (root, query, cb) ->
+                category == null ? null : cb.equal(root.get("category"), category);
+    }
+
+    private Specification<Event> hasCity(String city) {
+        return (root, query, cb) ->
+                (city == null || city.isEmpty()) ? null : cb.equal(cb.lower(root.get("city")), city.toLowerCase());
+    }
+
+    private Specification<Event> startDateAfter(LocalDateTime dateFrom) {
+        return (root, query, cb) ->
+                dateFrom == null ? null : cb.greaterThan(root.get("startDate"), dateFrom);
+    }
+
+    private Specification<Event> endDateBefore(LocalDateTime dateTo) {
+        return (root, query, cb) ->
+                dateTo == null ? null : cb.lessThan(root.get("endDate"), dateTo);
+    }
+
+    private Specification<Event> hasSearch(String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.isEmpty()) return null;
+            String pattern = "%" + search.toLowerCase() + "%";
+            return cb.or(
+                    cb.like(cb.lower(root.get("title")), pattern),
+                    cb.like(cb.lower(root.get("description")), pattern)
+            );
+        };
+    }
+
+    private Specification<Event> hasOrganization(String organizationId) {
+        return (root, query, cb) ->
+                (organizationId == null || organizationId.isEmpty()) ? null : cb.equal(root.get("organizationId"), organizationId);
     }
 
     private Pageable buildSafePageable(Pageable pageable, String sortField) {
