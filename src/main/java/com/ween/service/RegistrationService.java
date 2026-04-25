@@ -117,6 +117,7 @@ public class RegistrationService {
                 .orElseThrow(() -> new EventNotRegisteredException("User not registered for this event"));
 
         registration.setIsJoined(true);
+        registration.setJoinedAt(LocalDateTime.now());
         eventRegistrationRepository.save(registration);
         log.info("User marked as joined for event: {}", eventId);
 
