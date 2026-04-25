@@ -162,11 +162,9 @@ public class RegistrationService {
 
     @Transactional
     public void cancelAllRegistrationsForEvent(String eventId) {
-        List<EventRegistration> registrations = eventRegistrationRepository.findAll().stream()
-                .filter(r -> r.getEventId().equals(eventId))
-                .toList();
-
+        List<EventRegistration> registrations = eventRegistrationRepository.findByEventId(eventId);
         eventRegistrationRepository.deleteAll(registrations);
+
         log.info("All registrations cancelled for event: {}", eventId);
     }
 
