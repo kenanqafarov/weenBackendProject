@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-21T22:28:19+0400",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 25.0.2 (Oracle Corporation)"
+    date = "2026-04-25T11:55:45+0400",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
 public class LeaderboardEntryMapperImpl implements LeaderboardEntryMapper {
@@ -21,11 +21,11 @@ public class LeaderboardEntryMapperImpl implements LeaderboardEntryMapper {
 
         LeaderboardEntryResponse.LeaderboardEntryResponseBuilder leaderboardEntryResponse = LeaderboardEntryResponse.builder();
 
+        leaderboardEntryResponse.userId( leaderboardEntry.getUserId() );
+        leaderboardEntryResponse.rankPosition( leaderboardEntry.getRankPosition() );
         leaderboardEntryResponse.coinCount( leaderboardEntry.getCoinCount() );
         leaderboardEntryResponse.period( leaderboardEntry.getPeriod() );
-        leaderboardEntryResponse.rankPosition( leaderboardEntry.getRankPosition() );
         leaderboardEntryResponse.scope( leaderboardEntry.getScope() );
-        leaderboardEntryResponse.userId( leaderboardEntry.getUserId() );
 
         return leaderboardEntryResponse.build();
     }
@@ -38,11 +38,11 @@ public class LeaderboardEntryMapperImpl implements LeaderboardEntryMapper {
 
         LeaderboardEntry.LeaderboardEntryBuilder leaderboardEntry = LeaderboardEntry.builder();
 
-        leaderboardEntry.coinCount( response.getCoinCount() );
-        leaderboardEntry.period( response.getPeriod() );
-        leaderboardEntry.rankPosition( response.getRankPosition() );
-        leaderboardEntry.scope( response.getScope() );
         leaderboardEntry.userId( response.getUserId() );
+        leaderboardEntry.period( response.getPeriod() );
+        leaderboardEntry.scope( response.getScope() );
+        leaderboardEntry.rankPosition( response.getRankPosition() );
+        leaderboardEntry.coinCount( response.getCoinCount() );
 
         return leaderboardEntry.build();
     }

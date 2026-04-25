@@ -13,10 +13,7 @@ import com.ween.entity.PasswordResetToken;
 import com.ween.entity.User;
 import com.ween.entity.Organization;
 import com.ween.enums.UserRole;
-import com.ween.exception.AlreadyExistsException;
-import com.ween.exception.InvalidTokenException;
-import com.ween.exception.ResourceNotFoundException;
-import com.ween.exception.UnauthorizedException;
+import com.ween.exception.*;
 import com.ween.enums.NotificationType;
 import com.ween.repository.EmailVerificationTokenRepository;
 import com.ween.repository.PasswordResetTokenRepository;
@@ -30,6 +27,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
@@ -315,6 +314,13 @@ public class AuthService {
 
     public String refreshToken(String refreshTokenStr) {
         try {
+            if(!jwtUtil.validateToken(refreshTokenStr)) {
+                throw new UnauthorizedException(("Invalid or expired refresh token!"));
+            }
+
+            if (!"refresh".equals(jwtUtil.extractTokenType(refreshTokenStr))) {
+                throw new UnauthorizedException("Token is not a refresh token");
+            }
             String accountId = jwtUtil.extractUserId(refreshTokenStr);
 
             User user = userRepository.findById(accountId).orElse(null);
@@ -335,6 +341,9 @@ public class AuthService {
 
         } catch (ResourceNotFoundException e) {
             throw e;
+        } catch (DataAccessException e) {
+          log.error("Database error during token refresh", e);
+          throw new ServiceUnavailableException("Our services are currently unavailable, please try again later");
         } catch (Exception e) {
             log.error("Failed to refresh token", e);
             throw new UnauthorizedException("Invalid refresh token");

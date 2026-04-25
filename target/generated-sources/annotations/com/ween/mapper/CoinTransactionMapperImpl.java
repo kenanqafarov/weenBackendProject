@@ -7,8 +7,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2026-04-21T22:28:19+0400",
-    comments = "version: 1.5.5.Final, compiler: Eclipse JDT (IDE) 3.46.0.v20260407-0427, environment: Java 25.0.2 (Oracle Corporation)"
+    date = "2026-04-25T11:55:45+0400",
+    comments = "version: 1.5.5.Final, compiler: javac, environment: Java 17.0.18 (Microsoft)"
 )
 @Component
 public class CoinTransactionMapperImpl implements CoinTransactionMapper {
@@ -21,11 +21,11 @@ public class CoinTransactionMapperImpl implements CoinTransactionMapper {
 
         CoinTransactionResponse.CoinTransactionResponseBuilder coinTransactionResponse = CoinTransactionResponse.builder();
 
-        coinTransactionResponse.amount( transaction.getAmount() );
-        coinTransactionResponse.createdAt( transaction.getCreatedAt() );
         coinTransactionResponse.id( transaction.getId() );
+        coinTransactionResponse.amount( transaction.getAmount() );
         coinTransactionResponse.reason( transaction.getReason() );
         coinTransactionResponse.relatedEntityId( transaction.getRelatedEntityId() );
+        coinTransactionResponse.createdAt( transaction.getCreatedAt() );
 
         return coinTransactionResponse.build();
     }
