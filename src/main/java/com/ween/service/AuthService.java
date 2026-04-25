@@ -248,6 +248,17 @@ public class AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
+        if (Boolean.TRUE.equals(user.getBanned())) {
+            log.warn("Banned user tried logging in: {}", user.getEmail());
+            throw new UnauthorizedException("Your account has been banned from using our services" +
+                    (user.getBanReason() != null ? ": " + user.getBanReason() : ""));
+        }
+
+        // MAYBE: unverified users can still use our services?
+        if (!Boolean.TRUE.equals(user.getIsEmailVerified())) {
+            throw new UnauthorizedException("Please verify your email before logging in.");
+        }
+
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getEmail(), user.getRole());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
